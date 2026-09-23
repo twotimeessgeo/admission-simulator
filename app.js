@@ -10,6 +10,7 @@ const SOCIAL = ['생활과 윤리', '사회·문화', '윤리와 사상', '한�
 const SCIENCE = ['생명과학 Ⅰ', '지구과학 Ⅰ', '물리학 Ⅰ', '화학 Ⅰ', '생명과학 Ⅱ', '지구과학 Ⅱ', '물리학 Ⅱ', '화학 Ⅱ'];
 const MATH = [['수학(확통)', '확률과 통계'], ['수학(미적)', '미적분'], ['수학(기하)', '기하']];
 const KOREAN = [['국어(화작)', '화법과 작문'], ['국어(언매)', '언어와 매체']];
+const SECOND = ['독일어 Ⅰ', '프랑스어 Ⅰ', '스페인어 Ⅰ', '중국어 Ⅰ', '일본어 Ⅰ', '러시아어 Ⅰ', '아랍어 Ⅰ', '베트남어 Ⅰ', '한문 Ⅰ'];
 const SHORT = {
   '생활과 윤리': '생윤', '윤리와 사상': '윤사', '한국지리': '한지', '세계지리': '세지', '동아시아사': '동사', '세계사': '세계사',
   '정치와 법': '정법', '사회·문화': '사문', '경제': '경제', '물리학 Ⅰ': '물리1', '화학 Ⅰ': '화학1', '생명과학 Ⅰ': '생명1',
@@ -107,7 +108,7 @@ const median = (a) => { const v = a.filter(fin).sort((x, y) => x - y); if (!v.le
 const edName = () => EDITIONS[state.edition];
 const data = () => state.data[state.edition];
 const unitKey = (u) => u.u + '|' + u.m;
-const isGradeSubject = (s) => s === '영어' || s === '한국사';
+const isGradeSubject = (s) => s === '영어' || s === '한국사' || SECOND.includes(s);
 const subjectName = (s) => (s.startsWith('수학(') ? '수학' : s.startsWith('국어(') ? '국어' : s);
 
 function tierOf(g) {
@@ -116,8 +117,8 @@ function tierOf(g) {
   if (g >= 80) return { key: 'safe', label: '안정' };
   if (g >= 60) return { key: 'fit', label: '적정' };
   if (g >= 50) return { key: 'fit', label: '경계' };
-  if (g >= 30) return { key: 'reach', label: '소신' };
-  if (g >= 15) return { key: 'up', label: '상향' };
+  if (g >= 20) return { key: 'reach', label: '소신' };
+  if (g >= 10) return { key: 'up', label: '상향' };
   return { key: 'hard', label: '어려움' };
 }
 
@@ -145,11 +146,36 @@ function fitLine(g) {
   const t = tierOf(g);
   return el('div', { class: 'fit' }, gauge(g), el('span', { class: 'tier', 'data-tier': t.key, text: t.label }));
 }
+const EXTRA_COLORS = {
+  가천대학교: '#1C4E9D', 가톨릭관동대학교: '#004B87', 강원대학교: '#00477F', '강원대학교(강릉)': '#005BAC', 건양대학교: '#0054A6', 경기대학교: '#0A4C9A',
+  경북대학교: '#C8102E', 경상국립대학교: '#003A70', 경성대학교: '#0A3D91', 경인교육대학교: '#005BAC', 계명대학교: '#1F3C88', 고신대학교: '#0A4E9B',
+  공주교육대학교: '#00559F', 광주교육대학교: '#0067B1', 대구가톨릭대학교: '#8C1D40', 대구교육대학교: '#005BAC', 대구한의대학교: '#00704A', 대전대학교: '#0B5AA6',
+  덕성여자대학교: '#7B2D8B', 동덕여자대학교: '#9E1B32', 동신대학교: '#0072BC', 동아대학교: '#00539F', 동의대학교: '#004A99', 목포대학교: '#005BAC',
+  부산교육대학교: '#0067AC', 부산대학교: '#005BAA', 삼육대학교: '#0D6E3F', 상지대학교: '#0F5DA8', 서경대학교: '#0E4C92', 서울과학기술대학교: '#13335F',
+  서울교육대학교: '#0C4DA2', 서울여자대학교: '#7A1F3D', 성신여자대학교: '#1A6E5B', 세명대학교: '#004F9F', 숙명여자대학교: '#0D3A8A', 순천대학교: '#00579F',
+  순천향대학교: '#0C4DA2', 영남대학교: '#003F7D', 우석대학교: '#004E9A', 울산대학교: '#1E5AA8', 원광대학교: '#1B5E3B', 을지대학교: '#1A5DAB',
+  이화여자대학교: '#00462A', 인제대학교: '#004A98', 인천대학교: '#0066B3', 전남대학교: '#007A3D', 전북대학교: '#1C4E9D', 전주교육대학교: '#0067B1',
+  제주대학교: '#0071BC', 조선대학교: '#0B6E4F', 진주교육대학교: '#0067B1', 차의과학대학교: '#00588E', 청주교육대학교: '#0067B1', 추계예술대학교: '#8A1C2B',
+  춘천교육대학교: '#0067B1', 충남대학교: '#0C4E9B', 충북대학교: '#A6192E', 한국공학대학교: '#0055A5', 한국교원대학교: '#005BAC', 한국체육대학교: '#C8102E',
+  한국항공대학교: '#0C2F6B', 한림대학교: '#00704A', 한성대학교: '#0D3E8A',
+};
+const FALLBACK_COLORS = ['#1F4E8C', '#8C2A3C', '#1D6B55', '#5B3E8C', '#0E5E7A', '#7A4B16'];
+function uniColor(university) {
+  const colors = state.common.colors;
+  const base = university.replace(/\(.+?\)/, '');
+  if (colors[university]) return colors[university];
+  if (EXTRA_COLORS[university]) return EXTRA_COLORS[university];
+  if (colors[base]) return colors[base];
+  if (EXTRA_COLORS[base]) return EXTRA_COLORS[base];
+  let h = 0;
+  for (const ch of university) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return FALLBACK_COLORS[h % FALLBACK_COLORS.length];
+}
 function mono(university, faculty = null) {
   const d = data();
   if (faculty) return el('span', { class: 'mono is-faculty', text: FACULTY_MONO[faculty] });
   const info = d.universities[university] || { mo: university.slice(0, 2) };
-  const color = state.common.colors[university] || state.common.fallback_color;
+  const color = uniColor(university);
   return el('span', { class: 'mono', style: `--mono:${color}`, text: info.mo });
 }
 function shortUni(u) { return u.replace(/\((.+?)\)/, ' $1'); }
@@ -288,7 +314,8 @@ function renderStrip() {
   if (!rec) return;
   const { math, inq } = recordParts(rec);
   const cells = [['국어', rec['국어'], gradeOf('국어', rec['국어'])], [SHORT[math], rec[math], gradeOf(math, rec[math])],
-    ['영어', null, rec['영어']], ...inq.map((s) => [SHORT[s] || s, rec[s], gradeOf(s, rec[s])]), ['한국사', null, rec['한국사']]];
+    ['영어', null, rec['영어']], ...inq.map((s) => [SHORT[s] || s, rec[s], gradeOf(s, rec[s])]), ['한국사', null, rec['한국사']],
+    ...Object.keys(rec).filter((k) => SECOND.includes(k)).map((k) => [k.replace(/\s*Ⅰ$/, ''), null, rec[k]])];
   for (const [label, score, grade] of cells) {
     const b = el('b');
     if (score !== null) { b.append(String(score)); b.append(el('em', { text: grade + '등급' })); }
@@ -308,7 +335,9 @@ function renderReport() {
     { head: '수학', sub: MATH.find((m) => m[0] === math)?.[1] || '', subject: math },
     { head: '영어', sub: '', subject: '영어' },
     ...inq.map((s) => ({ head: inqHead, sub: s, subject: s })),
+    ...Object.keys(rec).filter((k) => SECOND.includes(k)).map((k) => ({ head: '제2외국어/한문', sub: k, subject: k })),
   ];
+  const second = cols.find((c) => c.head === '제2외국어/한문');
   const na = () => el('td', { class: 'na', 'aria-label': '해당 없음' });
   const num = (v) => el('td', { class: 'num', text: v ?? '—' });
   const cellStd = (c) => (isGradeSubject(c.subject) ? na() : num(rec[c.subject]));
@@ -316,12 +345,12 @@ function renderReport() {
   const cellGrade = (c) => num(gradeOf(c.subject, rec[c.subject]));
   const rows = [['선택과목', (c) => el('td', { class: 'sub', text: c.sub })], ['표준점수', cellStd], ['백분위', cellPct], ['등급', cellGrade]];
   const wide = el('table', { class: 'report is-wide' },
-    el('thead', {}, el('tr', {}, el('th', { text: '구분' }), el('th', { text: '한국사 영역' }), el('th', { text: '국어 영역' }), el('th', { text: '수학 영역' }), el('th', { text: '영어 영역' }), el('th', { colspan: inq.length, text: inqHead + ' 영역' }))),
+    el('thead', {}, el('tr', {}, el('th', { text: '구분' }), el('th', { text: '한국사 영역' }), el('th', { text: '국어 영역' }), el('th', { text: '수학 영역' }), el('th', { text: '영어 영역' }), el('th', { colspan: inq.length, text: inqHead + ' 영역' }), second ? el('th', { text: '제2외국어/한문 영역' }) : '')),
     el('tbody', {}, ...rows.map(([label, fn]) => el('tr', {}, el('th', { text: label }), ...cols.map(fn)))));
   const tallRows = rows.slice(1);
   const tall = el('table', { class: 'report is-tall' },
     el('thead', {}, el('tr', {}, el('th', { text: '구분' }), ...tallRows.map(([label]) => el('th', { text: label })))),
-    el('tbody', {}, ...cols.map((c) => el('tr', {}, el('th', {}, el('span', { class: 'rt-area', text: c.head === inqHead ? '탐구' : c.head }), c.sub ? el('small', { class: 'rt-sub', text: c.sub }) : ''), ...tallRows.map(([, fn]) => fn(c))))));
+    el('tbody', {}, ...cols.map((c) => el('tr', {}, el('th', {}, el('span', { class: 'rt-area', text: c.head === inqHead ? '탐구' : c.head === '제2외국어/한문' ? '제2외국어' : c.head }), c.sub ? el('small', { class: 'rt-sub', text: c.sub }) : ''), ...tallRows.map(([, fn]) => fn(c))))));
   $('report').replaceChildren(wide, tall);
 
   const g = myStream();
@@ -574,17 +603,24 @@ function drawChart(g, basis, myScore) {
   marks.sort((a, b) => a.s - b.s);
   const lanes = narrow ? [top - 64, top - 48, top - 32, top - 16] : [top - 50, top - 32, top - 14];
   const laneEnd = lanes.map(() => -99);
+  const placed = [];
   for (const m of marks) {
     const mx = x(m.s);
-    const w = m.label.length * (narrow ? 10 : 11) + 8;
-    const lane = laneEnd.findIndex((end) => mx - w / 2 > end + 3);
+    const w = m.label.length * (narrow ? 11 : 12) + 10;
+    const lane = laneEnd.findIndex((end) => mx - w / 2 > end + 4);
     if (lane < 0) continue;
     laneEnd[lane] = mx + w / 2;
-    const gm = add('g', { class: 'pc-mark' + (m.med ? ' is-med' : '') });
-    const ly = lanes[lane];
+    placed.push({ m, mx, ly: lanes[lane] });
+  }
+  const gLines = add('g', { class: 'pc-mark-lines' });
+  for (const { m, mx, ly } of placed) {
+    const gm = add('g', { class: 'pc-mark' + (m.med ? ' is-med' : '') }, gLines);
     add('line', { x1: mx, x2: mx, y1: ly + 4, y2: y(sm.reduce((best, p) => (Math.abs(p[0] - m.s) < Math.abs(best[0] - m.s) ? p : best))[1]) }, gm);
     add('circle', { cx: mx, cy: ly + 4, r: 2.5 }, gm);
-    const t = add('text', { x: mx, y: ly, 'text-anchor': 'middle' }, gm);
+  }
+  const gLabels = add('g', { class: 'pc-mark-labels' });
+  for (const { m, mx, ly } of placed) {
+    const t = add('text', { x: mx, y: ly, 'text-anchor': 'middle', class: m.med ? 'is-med' : '' }, gLabels);
     t.textContent = m.label;
   }
   if (fin(myScore)) {
@@ -977,7 +1013,7 @@ function tweakView() {
     el('button', { class: 'tw-button is-ghost is-sm', type: 'button', text: '되돌리기', onclick: () => { det.tweak = {}; det.tweakResult = null; renderDetail(); } })));
   const box = el('div', { class: 'tweak' });
   const { math, inq } = recordParts(rec);
-  const subjects = [['국어', '국어'], [math, MATH.find((m) => m[0] === math)?.[1] || '수학'], ...inq.map((s) => [s, s]), ['영어', '영어'], ['한국사', '한국사']];
+  const subjects = [['국어', '국어'], [math, MATH.find((m) => m[0] === math)?.[1] || '수학'], ...inq.map((s) => [s, s]), ['영어', '영어'], ['한국사', '한국사'], ...Object.keys(rec).filter((k) => SECOND.includes(k)).map((k) => [k, k])];
   for (const [subject, label] of subjects) {
     const base = rec[subject];
     const cur = det.tweak[subject] ?? base;
@@ -1030,13 +1066,13 @@ function stepScore(subject, delta) {
 
 /* ───────── Input sheet ───────── */
 
-const draft = { mode: 'std', record: null, korean: '국어(화작)', raw: {}, randomGroup: 'H' };
+const draft = { mode: 'std', record: null, korean: '국어(화작)', raw: {} };
 
 function openInput(mode = null) {
   const d = data();
   draft.record = state.record ? { ...state.record } : defaultRecord('H');
   draft.korean = state.korean;
-  draft.mode = mode || (draft.mode === 'raw' && state.edition !== 'september_20260903' ? 'std' : draft.mode === 'random' ? 'std' : draft.mode);
+  draft.mode = mode || 'std';
   draft.raw = {};
   void d;
   renderInput();
@@ -1053,82 +1089,101 @@ function snapScore(subject, v) {
   return list.reduce((best, s) => (Math.abs(s - v) < Math.abs(best - v) ? s : best), list[0]);
 }
 function renderInput() {
-  const d = data();
   const rawOk = !!state.common.raw[state.edition];
+  if (!rawOk && draft.mode === 'raw') draft.mode = 'std';
   for (const b of $('input-mode').children) {
     b.classList.toggle('is-active', b.dataset.mode === draft.mode);
     if (b.dataset.mode === 'raw') b.hidden = !rawOk;
   }
-  $('input-random').hidden = draft.mode !== 'random';
-  for (const b of $('random-group').children) b.classList.toggle('is-active', b.dataset.group === draft.randomGroup);
-  updateRandomLabel();
+  $('input-mode').hidden = !rawOk;
   const form = $('input-form');
   form.replaceChildren();
   const rec = draft.record;
   const { math, inq } = recordParts(rec);
+  const second = Object.keys(rec).find((k) => SECOND.includes(k)) || '';
   const raw = draft.mode === 'raw';
 
-  const subjectBlock = (title, subject, extraControl) => {
-    const block = el('div', { class: 'subject' });
-    const out = el('output', { text: infoText(subject, rec[subject]) });
-    block.append(el('div', { class: 'subject-head' }, el('h3', { text: title }), out));
-    if (extraControl) block.append(extraControl);
-    const inputs = el('div', { class: 'subject-inputs' });
-    if (isGradeSubject(subject)) {
-      inputs.append(gradeChips(subject, rec[subject], (grade) => { rec[subject] = grade; renderInput(); }));
-    } else if (raw) {
-      inputs.append(...rawInputs(subject, (ss) => { if (fin(ss)) rec[subject] = ss; out.textContent = infoText(subject, rec[subject]); }));
-    } else {
-      const input = el('input', { class: 'tw-input', type: 'number', inputmode: 'numeric', value: rec[subject] ?? '', 'aria-label': title + ' 표준점수' });
-      input.addEventListener('change', () => { const v = snapScore(subject, Number(input.value)); rec[subject] = v; input.value = v; out.textContent = infoText(subject, v); gradeBox.replaceWith(gradeBox = gradeFill(subject)); });
-      let gradeBox = gradeFill(subject);
-      inputs.append(el('label', {}, '표준점수', input), el('span', { class: 'chips-label', text: '등급' }), gradeBox);
+  const menu = (label, options, value, onChange) => {
+    const sel = el('select', { class: 'tw-select is-sm', 'aria-label': label });
+    for (const o of options) {
+      if (o.group) {
+        const og = el('optgroup', { label: o.group });
+        for (const [v, t, dis] of o.items) og.append(el('option', { value: v, text: t, selected: v === value ? true : null, disabled: dis ? true : null }));
+        sel.append(og);
+      } else sel.append(el('option', { value: o[0], text: o[1], selected: o[0] === value ? true : null }));
     }
-    block.append(inputs);
-    return block;
+    sel.addEventListener('change', () => onChange(sel.value));
+    return sel;
   };
-  const gradeFill = (subject) => gradeChips(subject, gradeOf(subject, rec[subject]), (grade) => {
-    const v = d.grade_fill[subject] && d.grade_fill[subject][String(grade)] && d.grade_fill[subject][String(grade)]['중'];
-    if (fin(v)) { rec[subject] = v; renderInput(); }
-  });
-
-  const korean = el('div', { class: 'tw-segmented' }, ...KOREAN.map(([k, label]) => el('button', { type: 'button', class: draft.korean === k ? 'is-active' : '', text: label, onclick: () => { draft.korean = k; renderInput(); } })));
-  form.append(subjectBlock('국어', '국어', korean));
-  const mathSeg = el('div', { class: 'tw-segmented' }, ...MATH.map(([k, label]) => el('button', { type: 'button', class: math === k ? 'is-active' : '', text: label, onclick: () => {
-    if (k === math) return;
-    const v = rec[math]; delete rec[math]; rec[k] = snapScore(k, v); renderInput();
-  } })));
-  form.append(subjectBlock('수학', math, mathSeg));
-  form.append(subjectBlock('영어', '영어'));
-  inq.forEach((s, idx) => {
-    const sel = el('select', { class: 'tw-select is-sm', 'aria-label': '탐구 ' + (idx + 1) });
-    for (const [group, list] of [['사회탐구', SOCIAL], ['과학탐구', SCIENCE]]) {
-      const og = el('optgroup', { label: group });
-      for (const name of list) og.append(el('option', { value: name, text: name, selected: name === s ? true : null, disabled: inq.includes(name) && name !== s ? true : null }));
-      sel.append(og);
+  const rename = (from, to, value) => {
+    const next = {};
+    for (const [k, v] of Object.entries(rec)) next[k === from ? to : k] = k === from ? value : v;
+    if (!(from in rec)) next[to] = value;
+    draft.record = next;
+    renderInput();
+  };
+  const row = (name, head, body) => form.append(el('div', { class: 'score-row' }, el('div', { class: 'score-row-head' }, el('span', { class: 'score-row-name', text: name }), head || ''), body));
+  const scoreBody = (subject, label) => {
+    const out = el('span', { class: 'score-info', text: infoText(subject, rec[subject]) });
+    const box = el('div', { class: 'score-row-body' });
+    if (raw) box.append(...rawInputs(subject, (ss) => { if (fin(ss)) rec[subject] = ss; out.textContent = infoText(subject, rec[subject]); }));
+    else {
+      const input = el('input', { class: 'tw-input', type: 'number', inputmode: 'numeric', placeholder: '—', value: rec[subject] ?? '', 'aria-label': label + ' 표준점수' });
+      input.addEventListener('change', () => {
+        if (input.value === '') { rec[subject] = null; out.textContent = ''; return; }
+        const v = snapScore(subject, Number(input.value)); rec[subject] = v; input.value = v; out.textContent = infoText(subject, v);
+      });
+      box.append(input);
     }
-    sel.addEventListener('change', () => {
-      const v = rec[s]; delete rec[s];
-      const keys = Object.keys(rec);
-      const ordered = {};
-      for (const k of keys) ordered[k] = rec[k];
-      ordered[sel.value] = snapScore(sel.value, v);
-      draft.record = ordered; renderInput();
-    });
-    form.append(subjectBlock('탐구 ' + (idx + 1), s, sel));
+    box.append(out);
+    return box;
+  };
+  const gradeBody = (subject) => el('div', { class: 'score-row-body' }, gradeChips(subject, rec[subject], (grade) => { rec[subject] = grade; renderInput(); }));
+
+  row('국어', menu('국어 선택과목', KOREAN, draft.korean, (v) => { draft.korean = v; renderInput(); }), scoreBody('국어', '국어'));
+  row('수학', menu('수학 선택과목', MATH, math, (v) => rename(math, v, snapScore(v, rec[math]))), scoreBody(math, '수학'));
+  row('영어', null, gradeBody('영어'));
+  inq.forEach((s, idx) => {
+    const items = (list) => list.map((n) => [n, n, inq.includes(n) && n !== s]);
+    row('탐구 ' + (idx + 1), menu('탐구 ' + (idx + 1), [{ group: '사회탐구', items: items(SOCIAL) }, { group: '과학탐구', items: items(SCIENCE) }], s, (v) => rename(s, v, snapScore(v, rec[s]))), scoreBody(s, '탐구 ' + (idx + 1)));
   });
-  form.append(subjectBlock('한국사', '한국사'));
+  row('한국사', null, gradeBody('한국사'));
+  const secondSel = menu('제2외국어/한문', [['', '응시 안 함'], ...SECOND.map((n) => [n, n])], second, (v) => {
+    const next = {};
+    for (const [k, val] of Object.entries(rec)) if (!SECOND.includes(k)) next[k] = val;
+    if (v) next[v] = second ? rec[second] : null;
+    draft.record = next;
+    renderInput();
+  });
+  row('제2외국어/한문', secondSel, second ? gradeBody(second) : el('div', { class: 'score-row-body' }));
 
   const region = $('input-region');
   region.replaceChildren(el('option', { value: '', text: '해당 없음' }), ...state.common.regions.map((r) => el('option', { value: r, text: r, selected: state.settings.region === r ? true : null })));
   for (const sel of document.querySelectorAll('#input-form select, #input-region')) enhanceSelect(sel);
   $('input-status').textContent = GNAME[streamOf(rec)];
 }
+function fillInputExample() {
+  const group = streamOf(draft.record);
+  const pool = data().random[group] || [];
+  if (!pool.length) return;
+  const target = Math.log10(0.3) + Math.random() * (Math.log10(15) - Math.log10(0.3));
+  const near = pool.filter(([p]) => Math.abs(Math.log10(Math.max(p, 0.001)) - target) < 0.06);
+  const choice = near.length ? near[Math.floor(Math.random() * near.length)] : pool[Math.floor(Math.random() * pool.length)];
+  const src = choice[1];
+  const rec = {};
+  const order = ['국어', ...Object.keys(src).filter((k) => k.startsWith('수학(')), '영어', ...Object.keys(src).filter((k) => SOCIAL.includes(k) || SCIENCE.includes(k)), '한국사'];
+  for (const k of order) if (src[k] !== undefined) rec[k] = src[k];
+  draft.record = rec;
+  draft.raw = {};
+  draft.mode = 'std';
+  draft.korean = Math.random() < 0.4 ? '국어(언매)' : '국어(화작)';
+  renderInput();
+}
 function infoText(subject, v) {
   if (!fin(v)) return '';
   if (isGradeSubject(subject)) return v + '등급';
   const p = pctOf(subject, v); const gr = gradeOf(subject, v);
-  return `표준점수 ${v}  백분위 ${p ?? '—'}  ${gr ?? '—'}등급`;
+  return `백분위 ${p ?? '—'}  ${gr ?? '—'}등급`;
 }
 function gradeChips(subject, active, onPick) {
   const box = el('div', { class: 'grade-chips', role: 'group', 'aria-label': subject + ' 등급' });
@@ -1152,33 +1207,11 @@ function rawInputs(subject, onChange) {
   return [make('원점수', 't:' + subject, 50)];
 }
 
-const RANDOM_MIN = Math.log10(0.05);
-const RANDOM_MAX = Math.log10(30);
-function randomTarget() { return 10 ** (RANDOM_MIN + (RANDOM_MAX - RANDOM_MIN) * Number($('random-target').value) / 1000); }
-function updateRandomLabel() { $('random-target-value').textContent = fmtPct(randomTarget()); }
-function makeRandom() {
-  const d = data();
-  const pool = d.random[draft.randomGroup] || [];
-  const target = Math.log10(randomTarget());
-  const near = pool.filter(([p]) => Math.abs(Math.log10(Math.max(p, 0.001)) - target) < 0.06);
-  const choice = near.length ? near[Math.floor(Math.random() * near.length)] : pool.reduce((best, x) => (Math.abs(Math.log10(Math.max(x[0], 0.001)) - target) < Math.abs(Math.log10(Math.max(best[0], 0.001)) - target) ? x : best), pool[0]);
-  if (!choice) return;
-  const rec = {};
-  const src = choice[1];
-  const order = ['국어', ...Object.keys(src).filter((k) => k.startsWith('수학(')), '영어', ...Object.keys(src).filter((k) => SOCIAL.includes(k) || SCIENCE.includes(k)), '한국사'];
-  for (const k of order) if (src[k] !== undefined) rec[k] = src[k];
-  draft.record = rec;
-  draft.korean = Math.random() < 0.4 ? '국어(언매)' : '국어(화작)';
-  draft.mode = 'random';
-  renderInput();
-  $('input-status').textContent = GNAME[streamOf(rec)] + ' 상위 ' + fmtPct(choice[0]);
-}
-
 async function applyInput() {
   const rec = draft.record;
   const { math, inq } = recordParts(rec);
   if (!math || inq.length !== 2) { toast('수학 선택과목과 탐구 두 과목을 골라 주세요.'); return; }
-  for (const [k, v] of Object.entries(rec)) if (!fin(v)) { toast(subjectName(k) + ' 점수를 입력해 주세요.'); return; }
+  for (const [k, v] of Object.entries(rec)) if (!fin(v)) { toast(SECOND.includes(k) ? k + ' 등급을 골라 주세요.' : subjectName(k) + ' 점수를 입력해 주세요.'); return; }
   if (draft.mode === 'raw') {
     const r = draft.raw; const num = (k) => (r[k] !== undefined && r[k] !== '' ? Number(r[k]) : null);
     const pair = (a, b) => (fin(num(a)) && fin(num(b)) ? num(a) + num(b) : null);
@@ -1593,13 +1626,20 @@ async function boot() {
   }
   bind();
   initThumbs();
+  let lastY = window.scrollY;
+  window.addEventListener('scroll', () => {
+    const yNow = window.scrollY;
+    const dy = yNow - lastY;
+    if (Math.abs(dy) < 6) return;
+    document.body.classList.toggle('subnav-hidden', dy > 0 && yNow > 140);
+    lastY = yNow;
+  }, { passive: true });
   await refresh();
 }
 
 function bind() {
   for (const b of document.querySelectorAll('[data-view]')) b.addEventListener('click', () => setView(b.dataset.view));
   $('score-strip').addEventListener('click', () => openInput());
-  $('edit-score').addEventListener('click', () => openInput());
   $('quick').addEventListener('submit', submitQuick);
   for (const b of $('quick-group').children) b.addEventListener('click', () => { if (quick.group !== b.dataset.group) { quickReset(b.dataset.group); renderQuick(); } });
   $('quick-dice').addEventListener('click', () => fillExample(quick.group));
@@ -1613,10 +1653,8 @@ function bind() {
   for (const b of $('conv-tab').children) b.addEventListener('click', () => { state.convTab = b.dataset.tab; persist(); renderConv(); });
   for (const b of $('basis-switch').children) b.addEventListener('click', () => { state.basis = b.dataset.basis; persist(); renderPosition(); });
   for (const b of $('input-mode').children) b.addEventListener('click', () => { draft.mode = b.dataset.mode; renderInput(); });
-  for (const b of $('random-group').children) b.addEventListener('click', () => { draft.randomGroup = b.dataset.group; renderInput(); });
-  $('random-target').addEventListener('input', updateRandomLabel);
-  $('random-make').addEventListener('click', makeRandom);
   $('input-apply').addEventListener('click', applyInput);
+  $('input-dice').addEventListener('click', fillInputExample);
   let timer;
   $('find-query').addEventListener('input', (ev) => { clearTimeout(timer); timer = setTimeout(() => { state.query = ev.target.value.trim(); renderFind(); }, 120); });
   for (const b of $('find-round').children) b.addEventListener('click', () => { state.findRound = b.dataset.round; renderFindCategory(); renderFind(); });

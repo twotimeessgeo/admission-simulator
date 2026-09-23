@@ -73,7 +73,7 @@
     <section id="view-overview" class="view" hidden>
       <div class="overview-top">
         <section class="block ot-report">
-          <div class="block-head"><h2>성적표</h2><button id="edit-score" class="tw-button is-sm" type="button">성적 수정</button></div>
+          <div class="block-head"><h2>성적표</h2></div>
           <div class="report-card tw-card">
             <div id="report-info" class="report-meta"></div>
             <div id="report" class="tw-table-wrap report-wrap"></div>
@@ -120,7 +120,7 @@
       </div>
 
       <section class="block">
-        <div class="block-head"><h2>군별 추천</h2></div>
+        <div class="block-head"><h2>군별 추천</h2><div class="tier-legend" aria-hidden="true"><span data-tier="safe">안정</span><span data-tier="fit">적정</span><span data-tier="reach">소신</span></div></div>
         <div id="rec-category" class="chip-row"></div>
         <div id="recs" class="rounds"></div>
       </section>
@@ -136,7 +136,7 @@
           <button type="button" data-round="다">다</button>
         </div>
       </div>
-      <div id="find-category" class="chip-row"></div>
+      <div class="find-sub"><div id="find-category" class="chip-row"></div><div class="tier-legend" aria-hidden="true"><span data-tier="safe">안정</span><span data-tier="fit">적정</span><span data-tier="reach">소신</span></div></div>
       <div id="find-list" class="line-list"></div>
     </section>
 
@@ -158,28 +158,13 @@
   <section id="sheet-input" class="sheet" role="dialog" aria-modal="true" aria-labelledby="input-title" hidden>
     <header class="sheet-head">
       <h2 id="input-title">성적</h2>
-      <button class="icon-btn" type="button" data-close aria-label="닫기" title="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <span class="sheet-head-actions"><button id="input-dice" class="icon-btn composer-dice" type="button" aria-label="예시 성적" title="예시 성적"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="9" cy="9" r="1.1" class="pip"/><circle cx="15" cy="9" r="1.1" class="pip"/><circle cx="12" cy="12" r="1.1" class="pip"/><circle cx="9" cy="15" r="1.1" class="pip"/><circle cx="15" cy="15" r="1.1" class="pip"/></svg></button>
+      <button class="icon-btn" type="button" data-close aria-label="닫기" title="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></span>
     </header>
     <div class="sheet-body">
       <div id="input-mode" class="tw-segmented sheet-switch">
         <button type="button" data-mode="std" class="is-active">표준점수</button>
         <button type="button" data-mode="raw">원점수</button>
-        <button type="button" data-mode="random">예시</button>
-      </div>
-      <div id="input-random" class="random" hidden>
-        <div class="field-row">
-          <span class="field-name">계열</span>
-          <div id="random-group" class="tw-segmented">
-            <button type="button" data-group="H" class="is-active">문과</button>
-            <button type="button" data-group="S">이과</button>
-          </div>
-        </div>
-        <div class="field-row">
-          <span class="field-name">누백</span>
-          <input id="random-target" class="range" type="range" min="0" max="1000" value="520" aria-label="누백">
-          <output id="random-target-value" class="field-out"></output>
-        </div>
-        <button id="random-make" class="tw-button" type="button">성적 뽑기</button>
       </div>
       <div id="input-form" class="score-form"></div>
       <div class="field-row">
