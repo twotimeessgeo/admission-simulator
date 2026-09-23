@@ -67,11 +67,10 @@
     <section id="view-overview" class="view" hidden>
       <div class="overview-top">
         <section class="block ot-report">
-          <div class="block-head"><h2>성적표</h2><div class="report-actions"><select id="transform-university" class="tw-select is-sm" aria-label="기준 대학"></select><button id="edit-score" class="tw-button is-sm" type="button">성적 수정</button></div></div>
+          <div class="block-head"><h2>성적표</h2><button id="edit-score" class="tw-button is-sm" type="button">성적 수정</button></div>
           <div class="report-card tw-card">
             <div id="report-info" class="report-meta"></div>
             <div id="report" class="tw-table-wrap report-wrap"></div>
-            <p id="transform-notice" class="transform-notice" hidden></p>
           </div>
         </section>
         <section class="block ot-conv">
@@ -183,6 +182,7 @@
       </div>
     </div>
     <footer class="sheet-foot">
+      <button id="input-reset" class="tw-button is-ghost is-sm" type="button">처음 화면</button>
       <span id="input-status" class="sheet-status"></span>
       <button id="input-apply" class="tw-button is-primary" type="button">적용</button>
     </footer>
