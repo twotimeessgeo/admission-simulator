@@ -279,7 +279,7 @@ body.is-busy .view { opacity: 0.5; pointer-events: none; transition: opacity 0.2
 
 /* ───────── Overview top ───────── */
 
-.overview-top { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); grid-template-areas: 'report conv' 'pos conv'; gap: var(--tw-space-12) var(--tw-space-8); align-items: start; }
+.overview-top { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); grid-template-areas: 'report conv' 'pos conv'; grid-template-rows: auto 1fr; gap: var(--tw-space-12) var(--tw-space-8); align-items: start; }
 .ot-report { grid-area: report; }
 .ot-conv { grid-area: conv; }
 .ot-pos { grid-area: pos; }
@@ -673,7 +673,7 @@ body.is-busy .view { opacity: 0.5; pointer-events: none; transition: opacity 0.2
 @media (max-width: 1100px) {
   .skeleton { grid-template-columns: minmax(0, 1fr); }
   .sk-chart, .sk-list { height: 260px; }
-  .overview-top { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'report' 'conv' 'pos'; }
+  .overview-top { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'report' 'conv' 'pos'; grid-template-rows: none; }
 }
 
 @media (max-width: 860px) {
