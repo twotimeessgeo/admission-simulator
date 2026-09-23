@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>정시 지원 찾기</title>
+
+  <link rel="stylesheet" href="./design-system/index.css">
+  <link rel="stylesheet" href="./app.css">
+  <script src="./pages_api.js" defer></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <header class="tw-nav is-static">
+    <div class="tw-nav-inner">
+      <span class="tw-brand" lang="en">twotimess</span>
+      <span class="app-title">정시 지원 찾기</span>
+      <span class="tw-nav-spacer"></span>
+      <span id="edition-badge" class="tw-badge"></span>
+      <button id="open-settings" class="tw-button is-ghost is-sm" type="button">설정</button>
+    </div>
+  </header>
+
+  <div class="tw-subnav app-subnav">
+    <div class="tw-subnav-inner">
+      <nav class="tw-segmented app-tabs" aria-label="화면">
+        <button type="button" data-view="overview" class="is-active">한눈에</button>
+        <button type="button" data-view="find">찾기</button>
+        <button type="button" data-view="list">내 리스트</button>
+      </nav>
+      <button id="score-strip" class="score-strip" type="button" aria-label="성적 수정"></button>
+    </div>
+  </div>
+
+  <main class="tw-page app-main">
+    <div id="offline" class="tw-empty" hidden>
+      <strong>계산기를 불러오지 못했습니다.</strong>
+      <span>새로고침 후에도 계속되면 인터넷 연결을 확인해 주세요.</span>
+    </div>
+    <div id="error" class="app-error" role="alert" hidden></div>
+
+    <div id="empty" class="start" hidden>
+      <h1 class="start-title">성적을 입력해 주세요.</h1>
+      <div class="start-actions">
+        <button id="start-input" class="tw-button is-primary is-lg" type="button">성적 입력</button>
+        <button id="start-random" class="tw-button is-lg" type="button">예시 성적</button>
+      </div>
+    </div>
+
+    <section id="view-overview" class="view" hidden>
+      <section class="block">
+        <div class="block-head">
+          <h2>내 위치</h2>
+          <div class="block-controls">
+            <div id="group-switch" class="tw-segmented">
+              <button type="button" data-group="H">문과</button>
+              <button type="button" data-group="S">이과</button>
+              <button type="button" data-group="A">전체</button>
+            </div>
+            <div id="basis-switch" class="tw-segmented">
+              <button type="button" data-basis="std">표준점수 합</button>
+              <button type="button" data-basis="pct">백분위 합</button>
+            </div>
+          </div>
+        </div>
+        <div class="position tw-card">
+          <div class="position-head">
+            <div class="tw-stat"><span class="tw-stat-label" id="pos-label"></span><span class="pos-value" id="pos-pct"></span></div>
+            <div class="tw-stat"><span class="tw-stat-label">등수</span><span class="tw-stat-value" id="pos-rank"></span></div>
+            <div class="tw-stat"><span class="tw-stat-label" id="pos-score-label"></span><span class="tw-stat-value" id="pos-score"></span></div>
+          </div>
+          <div id="position-chart" class="position-chart"></div>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><h2>성적표</h2><button id="edit-score" class="tw-button is-sm" type="button">수정</button></div>
+        <div id="report" class="tw-table-wrap report-wrap"></div>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><h2>군별 추천</h2></div>
+        <div id="rec-category" class="chip-row"></div>
+        <div id="recs" class="rounds"></div>
+      </section>
+    </section>
+
+    <section id="view-find" class="view" hidden>
+      <div class="find-bar">
+        <label class="tw-search find-search"><input id="find-query" class="tw-input" type="search" placeholder="대학 또는 학과" autocomplete="off" aria-label="검색"></label>
+        <div id="find-round" class="tw-segmented">
+          <button type="button" data-round="" class="is-active">전체</button>
+          <button type="button" data-round="가">가</button>
+          <button type="button" data-round="나">나</button>
+          <button type="button" data-round="다">다</button>
+        </div>
+      </div>
+      <div id="find-category" class="chip-row"></div>
+      <div id="find-list" class="line-list"></div>
+    </section>
+
+    <section id="view-list" class="view" hidden>
+      <div class="block-head"><h2>내 리스트</h2></div>
+      <div id="list-summary" class="combo"></div>
+      <div id="list-rounds" class="rounds"></div>
+    </section>
+  </main>
+
+  <nav class="tab-bar" aria-label="화면">
+    <button type="button" data-view="overview" class="is-active">한눈에</button>
+    <button type="button" data-view="find">찾기</button>
+    <button type="button" data-view="list">내 리스트</button>
+  </nav>
+
+  <div id="scrim" class="scrim" hidden></div>
+
+  <section id="sheet-input" class="sheet" role="dialog" aria-modal="true" aria-labelledby="input-title" hidden>
+    <header class="sheet-head">
+      <h2 id="input-title">성적</h2>
+      <button class="tw-button is-ghost is-sm" type="button" data-close>닫기</button>
+    </header>
+    <div class="sheet-body">
+      <div id="input-mode" class="tw-segmented sheet-switch">
+        <button type="button" data-mode="std" class="is-active">표준점수</button>
+        <button type="button" data-mode="raw">원점수</button>
+        <button type="button" data-mode="random">예시</button>
+      </div>
+      <div id="input-random" class="random" hidden>
+        <div class="field-row">
+          <span class="field-name">계열</span>
+          <div id="random-group" class="tw-segmented">
+            <button type="button" data-group="H" class="is-active">문과</button>
+            <button type="button" data-group="S">이과</button>
+          </div>
+        </div>
+        <div class="field-row">
+          <span class="field-name">누백</span>
+          <input id="random-target" class="range" type="range" min="0" max="1000" value="520" aria-label="누백">
+          <output id="random-target-value" class="field-out"></output>
+        </div>
+        <button id="random-make" class="tw-button" type="button">성적 뽑기</button>
+      </div>
+      <div id="input-form" class="score-form"></div>
+      <div class="field-row">
+        <span class="field-name">지역인재</span>
+        <select id="input-region" class="tw-select field-select" aria-label="지역인재"></select>
+      </div>
+    </div>
+    <footer class="sheet-foot">
+      <span id="input-status" class="sheet-status"></span>
+      <button id="input-apply" class="tw-button is-primary" type="button">적용</button>
+    </footer>
+  </section>
+
+  <section id="sheet-detail" class="sheet is-wide" role="dialog" aria-modal="true" aria-labelledby="detail-title" hidden>
+    <header class="sheet-head">
+      <div class="detail-title-row">
+        <span id="detail-mono" class="mono is-lg"></span>
+        <div>
+          <p id="detail-uni" class="detail-uni"></p>
+          <h2 id="detail-title"></h2>
+        </div>
+      </div>
+      <div class="detail-actions">
+        <button id="detail-fav" class="fav" type="button" aria-label="관심"></button>
+        <button class="tw-button is-ghost is-sm" type="button" data-close>닫기</button>
+      </div>
+    </header>
+    <div id="detail-body" class="sheet-body"></div>
+  </section>
+
+  <section id="sheet-settings" class="sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
+    <header class="sheet-head">
+      <h2 id="settings-title">설정</h2>
+      <button class="tw-button is-ghost is-sm" type="button" data-close>닫기</button>
+    </header>
+    <div id="settings-body" class="sheet-body"></div>
+  </section>
+</body>
+</html>

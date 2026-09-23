@@ -1,0 +1,78 @@
+[
+  {
+    "path": "runtime/admission_sim/cache/final_june_20260701_restrict.json",
+    "bytes": 346500
+  },
+  {
+    "path": "runtime/admission_sim/cache/final_june_20260701_units.json",
+    "bytes": 5818742
+  },
+  {
+    "path": "runtime/admission_sim/cache/september_20260903_restrict.json",
+    "bytes": 347017
+  },
+  {
+    "path": "runtime/admission_sim/cache/september_20260903_units.json",
+    "bytes": 5738395
+  },
+  {
+    "path": "runtime/admission_sim/eligibility.py",
+    "bytes": 5881
+  },
+  {
+    "path": "runtime/admission_sim/ux7_api.py",
+    "bytes": 2960
+  },
+  {
+    "path": "runtime/admission_sim/web_runtime.py",
+    "bytes": 9937
+  },
+  {
+    "path": "runtime/source/official_results/final_june_20260701/PERCENTAGE_values.json",
+    "bytes": 21161335
+  },
+  {
+    "path": "runtime/source/official_results/final_june_20260701/SUBJECT1_cells.json",
+    "bytes": 612296
+  },
+  {
+    "path": "runtime/source/official_results/final_june_full_maps.npz",
+    "bytes": 1070463
+  },
+  {
+    "path": "runtime/source/official_results/final_june_full_runtime.py",
+    "bytes": 7114
+  },
+  {
+    "path": "runtime/source/official_results/final_june_full_scoring.json",
+    "bytes": 6003579
+  },
+  {
+    "path": "runtime/source/reconstruction/meta.json",
+    "bytes": 8936635
+  },
+  {
+    "path": "runtime/source/reconstruction/tables.npz",
+    "bytes": 6575050
+  },
+  {
+    "path": "runtime/source/scoring_engine/engine.py",
+    "bytes": 13659
+  },
+  {
+    "path": "runtime/source/scoring_engine/runtime.py",
+    "bytes": 3611
+  },
+  {
+    "path": "runtime/source/scoring_engine/score.py",
+    "bytes": 2943
+  },
+  {
+    "path": "runtime/source/scoring_engine/september_maps.npz",
+    "bytes": 1093714
+  },
+  {
+    "path": "runtime/source/scoring_engine/september_scoring.json",
+    "bytes": 6003138
+  }
+]

@@ -1,0 +1,20 @@
+/*
+ * TWK Lausanne — local install mapping.
+ * Web projects that ship the font files (e.g. country-map-maker/fonts/) point `src` at those files instead;
+ * the weights must stay the same: 200 = display, 300 = UI/body Latin.
+ */
+@font-face {
+  font-family: "TWK Lausanne";
+  src: local("TWK Lausanne 200"), local("TWKLausanne-200");
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "TWK Lausanne";
+  src: local("TWK Lausanne 300"), local("TWKLausanne-300");
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+}
