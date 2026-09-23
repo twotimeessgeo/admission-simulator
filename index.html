@@ -60,8 +60,14 @@
     </div>
 
     <div id="loading" class="loading" hidden>
-      <div class="loading-bar"><i id="loading-fill"></i></div>
-      <p id="loading-text">성적을 계산하고 있습니다.</p>
+      <div class="loading-head">
+        <div class="loading-bar"><i id="loading-fill"></i></div>
+        <p id="loading-text">성적을 계산하고 있습니다.</p>
+      </div>
+      <div class="skeleton" aria-hidden="true">
+        <div class="sk-col"><i class="sk sk-title"></i><i class="sk sk-card"></i><i class="sk sk-title"></i><i class="sk sk-chart"></i></div>
+        <div class="sk-col"><i class="sk sk-title"></i><i class="sk sk-list"></i></div>
+      </div>
     </div>
 
     <section id="view-overview" class="view" hidden>
@@ -83,7 +89,7 @@
             </div>
           </div>
           <div class="conv tw-card">
-            <div class="conv-legend"><span class="lg-me">내 위치</span><span class="lg-line">합격선</span></div>
+            <div class="conv-legend"><span class="lg-me">나</span><span class="lg-line">합격선</span></div>
             <div id="conv-list" class="conv-list"></div>
           </div>
         </section>
@@ -198,7 +204,7 @@
         </div>
       </div>
       <div class="detail-actions">
-        <button id="detail-fav" class="fav" type="button" aria-label="관심"></button>
+        <button id="detail-fav" class="fav" type="button" aria-label="담기"></button>
         <button class="icon-btn" type="button" data-close aria-label="닫기" title="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
       </div>
     </header>
