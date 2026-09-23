@@ -579,26 +579,6 @@ function renderRecCategory() {
     onclick: () => { state.recCat = c; persist(); renderRecCategory(); renderRecs(); },
   })));
 }
-function pickRound(category, round) {
-  const pool = data().units.filter((u) => u.c === category && u.r === round && visible(u, category) && fin(gaugeOf(u)));
-  pool.sort((a, b) => cmpKey(sortKey(a, category), sortKey(b, category)));
-  const picks = []; const per = new Map();
-  const take = (min) => {
-    for (const u of pool) {
-      if (picks.length >= 5) break;
-      if (picks.includes(u) || gaugeOf(u) < min) continue;
-      const n = per.get(u.u) || 0;
-      if (n >= 2) continue;
-      per.set(u.u, n + 1); picks.push(u);
-    }
-  };
-  take(50);
-  if (picks.length < 3) take(35);
-  picks.sort((a, b) => cmpKey(sortKey(a, category), sortKey(b, category)));
-  const firstIdx = picks.length ? pool.indexOf(picks[0]) : pool.length;
-  const challenge = pool.slice(0, firstIdx).find((u) => gaugeOf(u) >= 20 && gaugeOf(u) < 50) || null;
-  return { picks, challenge };
-}
 function pickCard(u, { challenge = false, slot = null } = {}) {
   const faculty = u.c === '의치한약수' ? u.t : u.c === '초등교육' ? '교' : null;
   const card = el('div', { class: 'pick' + (challenge ? ' is-challenge' : '') + (slot ? ' is-slot' : ''), role: 'button', tabindex: 0 });
@@ -608,16 +588,46 @@ function pickCard(u, { challenge = false, slot = null } = {}) {
   void faculty;
   return card;
 }
+function recGroups(category, round) {
+  const pool = data().units.filter((u) => u.c === category && u.r === round && visible(u, category) && fin(gaugeOf(u)));
+  const med = category === '의치한약수';
+  const rg = rankGroupFor(category) === 'S' ? 'S' : 'H';
+  const map = new Map();
+  for (const u of pool) {
+    const key = med ? u.u + '|' + u.t : u.u;
+    let e = map.get(key);
+    if (!e) map.set(key, (e = { key: 'rec:' + round + ':' + key, uni: u.u, name: shortUni(u.u), tag: med ? MED_NAMES[u.t] || '' : '', all: [] }));
+    e.all.push(u);
+  }
+  const groups = [];
+  for (const e of map.values()) {
+    const ranked = e.all.filter((u) => gaugeOf(u) >= 20).sort((a, b) => (expPct(a, rg) ?? 99) - (expPct(b, rg) ?? 99));
+    let safe = 0;
+    e.units = ranked.filter((u) => gaugeOf(u) < 90 || safe++ < 3);
+    if (!e.units.length) continue;
+    e.best = Math.max(...e.units.map(gaugeOf));
+    const line = median(e.units.map((u) => expPct(u, rg)));
+    e.sort = med ? [SUB_ORDER[e.all[0].t] ?? 5, line ?? 99] : category === '초등교육' ? [0, line ?? 99] : [rankIdx(e.all[0], rg), line ?? 99];
+    groups.push(e);
+  }
+  groups.sort((a, b) => cmpKey(a.sort, b.sort));
+  let main = groups.filter((e) => e.best >= 50).slice(0, 5);
+  if (main.length < 3) main = groups.filter((e) => e.best >= 35).slice(0, 5);
+  const first = main.length ? groups.indexOf(main[0]) : groups.length;
+  const challenge = groups.slice(0, first).find((e) => e.best < 50) || null;
+  return { main, challenge };
+}
 function renderRecs() {
   const category = state.recCat || defaultCategory();
   const box = $('recs');
   box.replaceChildren();
+  const rerender = () => renderRecs();
   for (const round of ['가', '나', '다']) {
-    const { picks, challenge } = pickRound(category, round);
+    const { main, challenge } = recGroups(category, round);
     const col = el('div', { class: 'round' }, el('div', { class: 'round-head' }, el('h3', { text: round + '군' })));
-    if (!picks.length && !challenge) col.append(el('div', { class: 'round-empty', text: '추천할 학과가 없습니다.' }));
-    for (const u of picks) col.append(pickCard(u));
-    if (challenge) col.append(pickCard(challenge, { challenge: true }));
+    if (!main.length && !challenge) col.append(el('div', { class: 'round-empty', text: '추천할 대학이 없습니다.' }));
+    if (challenge) col.append(lineGroup(challenge, false, { rerender, hideRound: true, challenge: true }));
+    for (const e of main) col.append(lineGroup(e, false, { rerender, hideRound: true }));
     box.append(col);
   }
 }
@@ -683,25 +693,26 @@ function renderFind() {
   }
   if (!dividerDone) box.append(el('div', { class: 'me-line' }, el('span', { text: '내 위치' })));
 }
-function lineGroup(e, autoOpen) {
+function lineGroup(e, autoOpen, opts = {}) {
   const open = state.open.has(e.key) || autoOpen;
-  const wrap = el('div', { class: 'line-group' + (open ? ' is-open' : '') });
+  const rerender = opts.rerender || renderFind;
+  const wrap = el('div', { class: 'line-group' + (open ? ' is-open' : '') + (opts.challenge ? ' is-challenge' : '') });
   const counts = { safe: 0, fit: 0, reach: 0 };
   for (const u of e.units) { const g = gaugeOf(u); if (g >= 80) counts.safe++; else if (g >= 50) counts.fit++; else if (g >= 20) counts.reach++; }
   const dots = el('span', { class: 'line-dots' });
   for (const [k, label] of [['safe', '안정'], ['fit', '적정'], ['reach', '소신']]) if (counts[k]) dots.append(el('span', { 'data-tier': k, title: label, text: counts[k] }));
   const row = el('button', { class: 'line-row', type: 'button', 'aria-expanded': open ? 'true' : 'false' },
     e.faculty ? mono(null, e.faculty) : mono(e.uni),
-    el('span', { class: 'line-name' }, el('strong', { text: e.name }), el('small', { text: '모집단위 ' + e.units.length + '개' })),
+    el('span', { class: 'line-name' }, el('strong', { text: e.name }), el('small', {}, [e.tag, opts.challenge ? '도전' : '', (opts.hideRound ? '학과 ' : '모집단위 ') + e.units.length + '개'].filter(Boolean).join('  '))),
     dots, el('span', { class: 'line-chevron' }));
-  row.addEventListener('click', () => { if (state.open.has(e.key)) state.open.delete(e.key); else state.open.add(e.key); renderFind(); });
+  row.addEventListener('click', () => { if (state.open.has(e.key)) state.open.delete(e.key); else state.open.add(e.key); rerender(); });
   wrap.append(row);
   if (open) {
     const list = el('div', { class: 'unit-list' });
-    const units = [...e.units].sort((a, b) => (gaugeOf(b) ?? -1) - (gaugeOf(a) ?? -1));
+    const units = opts.hideRound ? e.units : [...e.units].sort((a, b) => (gaugeOf(b) ?? -1) - (gaugeOf(a) ?? -1));
     for (const u of units) {
       const name = e.faculty ? [shortUni(u.u), ...variantOf(u.m)].join(' ') : u.m;
-      const r = el('button', { class: 'unit-row', type: 'button' }, el('strong', { text: name }), el('span', { class: 'round-tag', text: u.r }), fitLine(gaugeOf(u)));
+      const r = el('button', { class: 'unit-row', type: 'button' }, el('strong', { text: name }), opts.hideRound ? '' : el('span', { class: 'round-tag', text: u.r }), fitLine(gaugeOf(u)));
       r.addEventListener('click', () => openDetail(u));
       list.append(r);
     }
