@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>정시 지원 찾기</title>
+  <title>2027 정시</title>
 
   <link rel="stylesheet" href="./design-system/index.css">
   <link rel="stylesheet" href="./app.css">
@@ -14,19 +14,19 @@
   <header class="tw-nav is-static">
     <div class="tw-nav-inner">
       <span class="tw-brand" lang="en">twotimess</span>
-      <span class="app-title">정시 지원 찾기</span>
+      <span class="app-title">2027 정시</span>
       <span class="tw-nav-spacer"></span>
       <span id="edition-badge" class="tw-badge"></span>
-      <button id="open-settings" class="tw-button is-ghost is-sm" type="button">설정</button>
+      <button id="open-settings" class="icon-btn" type="button" aria-label="설정" title="설정"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l2-1.6-2-3.4-2.4.9a7.4 7.4 0 0 0-2.6-1.5L14 2.4h-4l-.4 2.5A7.4 7.4 0 0 0 7 6.4l-2.4-.9-2 3.4 2 1.6a7.6 7.6 0 0 0 0 3l-2 1.6 2 3.4 2.4-.9a7.4 7.4 0 0 0 2.6 1.5l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 2.6-1.5l2.4.9 2-3.4Z"/></svg></button>
     </div>
   </header>
 
   <div class="tw-subnav app-subnav">
     <div class="tw-subnav-inner">
       <nav class="tw-segmented app-tabs" aria-label="화면">
-        <button type="button" data-view="overview" class="is-active">한눈에</button>
-        <button type="button" data-view="find">찾기</button>
-        <button type="button" data-view="list">내 리스트</button>
+        <button type="button" data-view="overview" class="is-active">성적 분석</button>
+        <button type="button" data-view="find">대학 찾기</button>
+        <button type="button" data-view="list">모의지원</button>
       </nav>
       <button id="score-strip" class="score-strip" type="button" aria-label="성적 수정"></button>
     </div>
@@ -48,35 +48,54 @@
     </div>
 
     <section id="view-overview" class="view" hidden>
-      <section class="block">
-        <div class="block-head">
-          <h2>내 위치</h2>
-          <div class="block-controls">
-            <div id="group-switch" class="tw-segmented">
-              <button type="button" data-group="H">문과</button>
-              <button type="button" data-group="S">이과</button>
-              <button type="button" data-group="A">전체</button>
-            </div>
-            <div id="basis-switch" class="tw-segmented">
-              <button type="button" data-basis="std">표준점수 합</button>
-              <button type="button" data-basis="pct">백분위 합</button>
+      <div class="overview-top">
+        <section class="block ot-report">
+          <div class="block-head"><h2>성적표</h2><div class="report-actions"><select id="transform-university" class="tw-select is-sm" aria-label="기준 대학"></select><button id="edit-score" class="tw-button is-sm" type="button">성적 수정</button></div></div>
+          <div class="report-card tw-card">
+            <div id="report-info" class="report-meta"></div>
+            <div id="report" class="tw-table-wrap report-wrap"></div>
+            <p id="transform-notice" class="transform-notice" hidden></p>
+          </div>
+        </section>
+        <section class="block ot-conv">
+          <div class="block-head">
+            <h2>대학별 환산점수</h2>
+            <div id="conv-tab" class="tw-segmented">
+              <button type="button" data-tab="med">메디컬</button>
+              <button type="button" data-tab="S">자연계</button>
+              <button type="button" data-tab="H">인문계</button>
             </div>
           </div>
-        </div>
-        <div class="position tw-card">
-          <div class="position-head">
-            <div class="tw-stat"><span class="tw-stat-label" id="pos-label"></span><span class="pos-value" id="pos-pct"></span></div>
-            <div class="tw-stat"><span class="tw-stat-label">등수</span><span class="tw-stat-value" id="pos-rank"></span></div>
-            <div class="tw-stat"><span class="tw-stat-label" id="pos-score-label"></span><span class="tw-stat-value" id="pos-score"></span></div>
+          <div class="conv tw-card">
+            <div class="conv-legend"><span class="lg-me">내 등수</span><span class="lg-line">합격선</span></div>
+            <div id="conv-list" class="conv-list"></div>
           </div>
-          <div id="position-chart" class="position-chart"></div>
-        </div>
-      </section>
-
-      <section class="block">
-        <div class="block-head"><h2>성적표</h2><button id="edit-score" class="tw-button is-sm" type="button">수정</button></div>
-        <div id="report" class="tw-table-wrap report-wrap"></div>
-      </section>
+        </section>
+        <section class="block ot-pos">
+          <div class="block-head">
+            <h2>내 위치</h2>
+            <div class="block-controls">
+              <div id="group-switch" class="tw-segmented">
+                <button type="button" data-group="H">문과</button>
+                <button type="button" data-group="S">이과</button>
+                <button type="button" data-group="A">전체</button>
+              </div>
+              <div id="basis-switch" class="tw-segmented">
+                <button type="button" data-basis="std">표준점수 합</button>
+                <button type="button" data-basis="pct">백분위 합</button>
+              </div>
+            </div>
+          </div>
+          <div class="position tw-card">
+            <div class="position-head">
+              <div class="tw-stat"><span class="tw-stat-label" id="pos-label"></span><span class="pos-value" id="pos-pct"></span></div>
+              <div class="tw-stat"><span class="tw-stat-label">등수</span><span class="tw-stat-value" id="pos-rank"></span></div>
+              <div class="tw-stat"><span class="tw-stat-label" id="pos-score-label"></span><span class="tw-stat-value" id="pos-score"></span></div>
+            </div>
+            <div id="position-chart" class="position-chart"></div>
+          </div>
+        </section>
+      </div>
 
       <section class="block">
         <div class="block-head"><h2>군별 추천</h2></div>
@@ -100,16 +119,16 @@
     </section>
 
     <section id="view-list" class="view" hidden>
-      <div class="block-head"><h2>내 리스트</h2></div>
+      <div class="block-head"><h2>모의지원</h2></div>
       <div id="list-summary" class="combo"></div>
       <div id="list-rounds" class="rounds"></div>
     </section>
   </main>
 
   <nav class="tab-bar" aria-label="화면">
-    <button type="button" data-view="overview" class="is-active">한눈에</button>
-    <button type="button" data-view="find">찾기</button>
-    <button type="button" data-view="list">내 리스트</button>
+    <button type="button" data-view="overview" class="is-active">성적 분석</button>
+    <button type="button" data-view="find">대학 찾기</button>
+    <button type="button" data-view="list">모의지원</button>
   </nav>
 
   <div id="scrim" class="scrim" hidden></div>
@@ -117,7 +136,7 @@
   <section id="sheet-input" class="sheet" role="dialog" aria-modal="true" aria-labelledby="input-title" hidden>
     <header class="sheet-head">
       <h2 id="input-title">성적</h2>
-      <button class="tw-button is-ghost is-sm" type="button" data-close>닫기</button>
+      <button class="icon-btn" type="button" data-close aria-label="닫기" title="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
     </header>
     <div class="sheet-body">
       <div id="input-mode" class="tw-segmented sheet-switch">
@@ -163,7 +182,7 @@
       </div>
       <div class="detail-actions">
         <button id="detail-fav" class="fav" type="button" aria-label="관심"></button>
-        <button class="tw-button is-ghost is-sm" type="button" data-close>닫기</button>
+        <button class="icon-btn" type="button" data-close aria-label="닫기" title="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
       </div>
     </header>
     <div id="detail-body" class="sheet-body"></div>
@@ -172,7 +191,7 @@
   <section id="sheet-settings" class="sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
     <header class="sheet-head">
       <h2 id="settings-title">설정</h2>
-      <button class="tw-button is-ghost is-sm" type="button" data-close>닫기</button>
+      <button class="icon-btn" type="button" data-close aria-label="닫기" title="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
     </header>
     <div id="settings-body" class="sheet-body"></div>
   </section>
