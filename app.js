@@ -215,8 +215,9 @@ const displayGroup = () => state.group || myStream();
 async function evaluate() {
   if (!state.record) return;
   setBusy(true);
+  if (!state.result) renderAll();
   try {
-    const res = await fetchJSON('/api/evaluate', { edition: state.edition, group: 'all', record: state.record });
+    const res = await fetchJSON('/api/evaluate', { edition: state.edition, group: 'all', record: state.record, compact: true });
     state.result = res;
     state.rows = new Map(res.rows.map((r) => [r.id, r]));
     state.schemes = new Map(res.schemes.map((s) => [s.name, s]));
@@ -228,7 +229,7 @@ async function evaluate() {
     $('error').textContent = err.message;
   } finally { setBusy(false); }
 }
-function setBusy(on) { document.body.classList.toggle('is-busy', on); }
+function setBusy(on) { state.busy = on; document.body.classList.toggle('is-busy', on); }
 
 /* ───────── Unit helpers ───────── */
 
@@ -1192,6 +1193,105 @@ async function applyInput() {
   await refresh();
 }
 
+/* ───────── Start ───────── */
+
+const QUICK_DEFAULTS = {
+  H: { korean: '국어(화작)', math: '수학(확통)', inq: ['생활과 윤리', '사회·문화'] },
+  S: { korean: '국어(언매)', math: '수학(미적)', inq: ['생명과학 Ⅰ', '지구과학 Ⅰ'] },
+};
+const quick = { group: 'H', korean: null, math: null, inq: null, values: {} };
+function quickReset(group) {
+  const d = QUICK_DEFAULTS[group];
+  quick.group = group;
+  quick.korean = d.korean;
+  quick.math = d.math;
+  quick.inq = [...d.inq];
+}
+function renderQuick() {
+  if (!quick.korean) quickReset('H');
+  for (const b of $('quick-group').children) b.classList.toggle('is-active', b.dataset.group === quick.group);
+  const box = $('quick-fields');
+  box.replaceChildren();
+  const pick = (options, value, onChange, label) => {
+    const sel = el('select', { class: 'cf-pick', 'aria-label': label });
+    for (const [v, t, disabled] of options) sel.append(el('option', { value: v, text: t, selected: v === value ? true : null, disabled: disabled ? true : null }));
+    sel.addEventListener('change', () => onChange(sel.value));
+    return sel;
+  };
+  const numberCell = (key, head) => {
+    const input = el('input', { class: 'cf-value', type: 'number', inputmode: 'numeric', placeholder: '—', value: quick.values[key] ?? '', 'aria-label': key + ' 표준점수' });
+    input.addEventListener('input', () => { quick.values[key] = input.value; });
+    return el('label', { class: 'cf' }, head, input);
+  };
+  const gradeCell = (key) => {
+    const sel = el('select', { class: 'cf-value cf-grade', 'aria-label': key + ' 등급' });
+    sel.append(el('option', { value: '', text: '—' }));
+    for (let g = 1; g <= 9; g++) sel.append(el('option', { value: g, text: g + '등급', selected: String(quick.values[key]) === String(g) ? true : null }));
+    sel.addEventListener('change', () => { quick.values[key] = sel.value; });
+    return el('label', { class: 'cf' }, el('span', { class: 'cf-name', text: key }), sel);
+  };
+  const inqOptions = (idx) => [...SOCIAL, ...SCIENCE].map((n) => [n, n, quick.inq.includes(n) && quick.inq[idx] !== n]);
+  box.append(
+    numberCell('국어', pick(KOREAN.map(([k, t]) => [k, t]), quick.korean, (v) => { quick.korean = v; }, '국어 선택과목')),
+    numberCell('수학', pick(MATH.map(([k, t]) => [k, t]), quick.math, (v) => { quick.math = v; }, '수학 선택과목')),
+    gradeCell('영어'),
+    numberCell('탐구1', pick(inqOptions(0), quick.inq[0], (v) => { quick.inq[0] = v; renderQuick(); }, '탐구 1')),
+    numberCell('탐구2', pick(inqOptions(1), quick.inq[1], (v) => { quick.inq[1] = v; renderQuick(); }, '탐구 2')),
+    gradeCell('한국사'),
+  );
+  $('start-raw').hidden = !state.common.raw[state.edition];
+}
+async function submitQuick(ev) {
+  ev.preventDefault();
+  const v = quick.values;
+  const rec = {};
+  const std = (subject, key) => {
+    const n = Number(v[key]);
+    if (v[key] === undefined || v[key] === '' || !fin(n)) return null;
+    return snapScore(subject, n);
+  };
+  const grade = (key) => { const n = Number(v[key]); return n >= 1 && n <= 9 ? n : null; };
+  rec['국어'] = std('국어', '국어');
+  rec[quick.math] = std(quick.math, '수학');
+  rec['영어'] = grade('영어');
+  rec[quick.inq[0]] = std(quick.inq[0], '탐구1');
+  rec[quick.inq[1]] = std(quick.inq[1], '탐구2');
+  rec['한국사'] = grade('한국사');
+  const missing = Object.entries(rec).find(([, x]) => !fin(x));
+  if (missing) { toast(subjectName(missing[0]) + ' 점수를 입력해 주세요.'); return; }
+  await startWith(rec, quick.korean);
+}
+async function startWith(rec, korean) {
+  state.record = rec;
+  state.korean = korean;
+  state.raw = null;
+  state.group = null;
+  state.result = null;
+  persist();
+  await refresh();
+}
+async function startExample(group) {
+  const pool = data().random[group] || [];
+  if (!pool.length) return;
+  const target = Math.log10(0.3) + Math.random() * (Math.log10(15) - Math.log10(0.3));
+  const near = pool.filter(([p]) => Math.abs(Math.log10(Math.max(p, 0.001)) - target) < 0.06);
+  const choice = near.length ? near[Math.floor(Math.random() * near.length)] : pool[Math.floor(Math.random() * pool.length)];
+  const src = choice[1];
+  const rec = {};
+  const order = ['국어', ...Object.keys(src).filter((k) => k.startsWith('수학(')), '영어', ...Object.keys(src).filter((k) => SOCIAL.includes(k) || SCIENCE.includes(k)), '한국사'];
+  for (const k of order) if (src[k] !== undefined) rec[k] = src[k];
+  await startWith(rec, Math.random() < 0.4 ? '국어(언매)' : '국어(화작)');
+}
+function setProgress(text, ratio) {
+  if (text) { $('loading-text').textContent = text; if (!state.record) $('quick-status').textContent = text; }
+  if (fin(ratio)) { $('loading-fill').parentElement.classList.add('is-det'); $('loading-fill').style.width = Math.round(100 * Math.min(1, ratio)) + '%'; }
+}
+window.addEventListener('calc-progress', (ev) => {
+  const { text, ratio, done } = ev.detail || {};
+  if (done) { $('quick-status').textContent = '표준점수'; setProgress(null, 1); return; }
+  setProgress(text, ratio);
+});
+
 /* ───────── Settings ───────── */
 
 function openSettings() {
@@ -1239,7 +1339,12 @@ function setView(v) {
 
 function renderAll() {
   const has = !!(state.record && state.result);
-  $('empty').hidden = !!state.record;
+  const loading = !!state.record && !state.result && !!state.busy;
+  const start = !state.record || (!state.result && !state.busy);
+  document.body.dataset.state = has ? 'app' : loading ? 'loading' : 'start';
+  $('empty').hidden = !start;
+  $('loading').hidden = !loading;
+  if (start) renderQuick();
   $('edition-badge').textContent = edName();
   renderStrip();
   for (const v of ['overview', 'find', 'list']) $('view-' + v).hidden = !has || state.view !== v;
@@ -1274,8 +1379,10 @@ function bind() {
   $('score-strip').addEventListener('click', () => openInput());
   $('edit-score').addEventListener('click', () => openInput());
   $('transform-university').addEventListener('change', (ev) => { state.transformUni = ev.target.value; persist(); renderReport(); });
-  $('start-input').addEventListener('click', () => openInput('std'));
-  $('start-random').addEventListener('click', () => { openInput('random'); });
+  $('quick').addEventListener('submit', submitQuick);
+  for (const b of $('quick-group').children) b.addEventListener('click', () => { if (quick.group !== b.dataset.group) { quickReset(b.dataset.group); renderQuick(); } });
+  $('quick-dice').addEventListener('click', () => startExample(quick.group));
+  $('start-raw').addEventListener('click', () => openInput('raw'));
   $('open-settings').addEventListener('click', openSettings);
   $('scrim').addEventListener('click', hideSheets);
   for (const b of document.querySelectorAll('[data-close]')) b.addEventListener('click', hideSheets);

@@ -3,8 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>2027 정시</title>
+  <title>정시 지원</title>
 
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="./design-system/index.css">
   <link rel="stylesheet" href="./app.css">
   <script src="./pages_api.js" defer></script>
@@ -14,7 +16,6 @@
   <header class="tw-nav is-static">
     <div class="tw-nav-inner">
       <span class="tw-brand" lang="en">twotimess</span>
-      <span class="app-title">2027 정시</span>
       <span class="tw-nav-spacer"></span>
       <span id="edition-badge" class="tw-badge"></span>
       <button id="open-settings" class="icon-btn" type="button" aria-label="설정" title="설정"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l2-1.6-2-3.4-2.4.9a7.4 7.4 0 0 0-2.6-1.5L14 2.4h-4l-.4 2.5A7.4 7.4 0 0 0 7 6.4l-2.4-.9-2 3.4 2 1.6a7.6 7.6 0 0 0 0 3l-2 1.6 2 3.4 2.4-.9a7.4 7.4 0 0 0 2.6 1.5l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 2.6-1.5l2.4.9 2-3.4Z"/></svg></button>
@@ -40,11 +41,27 @@
     <div id="error" class="app-error" role="alert" hidden></div>
 
     <div id="empty" class="start" hidden>
-      <h1 class="start-title">성적을 입력해 주세요.</h1>
-      <div class="start-actions">
-        <button id="start-input" class="tw-button is-primary is-lg" type="button">성적 입력</button>
-        <button id="start-random" class="tw-button is-lg" type="button">예시 성적</button>
+      <h1 class="tw-sr-only">성적 입력</h1>
+      <form id="quick" class="composer" novalidate>
+        <div id="quick-fields" class="composer-fields"></div>
+        <div class="composer-foot">
+          <div id="quick-group" class="tw-segmented">
+            <button type="button" data-group="H" class="is-active">문과</button>
+            <button type="button" data-group="S">이과</button>
+          </div>
+          <button id="quick-dice" class="icon-btn composer-dice" type="button" aria-label="예시 성적" title="예시 성적"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="9" cy="9" r="1.1" class="pip"/><circle cx="15" cy="9" r="1.1" class="pip"/><circle cx="12" cy="12" r="1.1" class="pip"/><circle cx="9" cy="15" r="1.1" class="pip"/><circle cx="15" cy="15" r="1.1" class="pip"/></svg></button>
+          <span id="quick-status" class="composer-status" aria-live="polite">표준점수</span>
+          <button id="quick-send" class="composer-send" type="submit" aria-label="결과 보기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
+        </div>
+      </form>
+      <div class="start-chips">
+        <button id="start-raw" class="tw-chip" type="button">원점수로 입력</button>
       </div>
+    </div>
+
+    <div id="loading" class="loading" hidden>
+      <div class="loading-bar"><i id="loading-fill"></i></div>
+      <p id="loading-text">성적을 계산하고 있습니다.</p>
     </div>
 
     <section id="view-overview" class="view" hidden>

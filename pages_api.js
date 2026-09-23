@@ -1,8 +1,9 @@
-/* The Pages candidate uses a worker instead of the local Python HTTP API. */
+/* The Pages build uses a worker instead of the local Python HTTP API. */
 const pagesWorker = new Worker('./pages_worker.js');
 const pagesPending = new Map();
 let pagesSequence = 0;
 pagesWorker.onmessage = ({ data }) => {
+  if (data.progress) { window.dispatchEvent(new CustomEvent('calc-progress', { detail: data.progress })); return; }
   const task = pagesPending.get(data.id);
   if (!task) return;
   pagesPending.delete(data.id);
@@ -20,3 +21,5 @@ function pagesRequest(route, body) {
     pagesWorker.postMessage({ id, route, body });
   });
 }
+/* Start loading the calculator while the start screen is open. */
+pagesRequest('/warm', {}).catch(() => {});
