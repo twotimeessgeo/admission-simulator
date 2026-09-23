@@ -137,7 +137,6 @@ function lineIndex(score, th) {
 function gauge(g, { large = false, ghost = null } = {}) {
   const t = tierOf(g);
   const box = el('div', { class: 'gauge' + (large ? ' is-lg' : ''), role: 'img', 'aria-label': t.label });
-  for (const x of [20, 50, 80]) box.append(el('i', { style: `left:${x}%` }));
   if (fin(ghost)) box.append(el('b', { class: 'is-ghost', style: `left:${ghost}%` }));
   if (fin(g)) box.append(el('b', { 'data-tier': t.key, style: `left:${g}%` }));
   return box;
@@ -380,21 +379,38 @@ function renderConv() {
   box.replaceChildren();
   if (!list.length) { box.append(el('div', { class: 'round-empty', text: '표시할 대학이 없습니다.' })); return; }
   const max = Math.max(...list.map((e) => Math.max(e.my, e.exp))) * 1.08 / 100 * n;
+  const pos = (rank) => Math.max(0, Math.min(100, 100 * (1 - rank / max))).toFixed(1);
   for (const e of list) {
     const mine = e.my / 100 * n;
     const line = e.exp / 100 * n;
     const t = tierOf(gaugeOf(e.rep));
-    const row = el('button', { class: 'conv-row', type: 'button' },
+    const key = 'conv:' + tab + ':' + e.key;
+    const open = state.open.has(key);
+    const wrap = el('div', { class: 'conv-item' + (open ? ' is-open' : '') });
+    const row = el('button', { class: 'conv-row', type: 'button', 'aria-expanded': open ? 'true' : 'false' },
       mono(e.uni),
       el('span', { class: 'conv-name' }, el('strong', { text: shortUni(e.uni) }), el('small', { text: e.label })),
       el('span', { class: 'conv-score' }, el('b', { text: fmt(e.score, 2) })),
       el('span', { class: 'conv-bar' },
-        el('span', { class: 'conv-fill', 'data-tier': t.key, style: `width:${Math.min(100, 100 * mine / max).toFixed(1)}%` }),
-        el('i', { style: `left:${Math.min(100, 100 * line / max).toFixed(1)}%`, title: '합격선 ' + fmtRank(line) })),
+        el('span', { class: 'conv-fill', 'data-tier': t.key, style: `width:${pos(mine)}%` }),
+        el('i', { style: `left:${pos(line)}%`, title: '합격선 ' + fmtRank(line) })),
       el('span', { class: 'conv-rank', text: fmtRank(mine) }));
-    row.addEventListener('click', () => openDetail(e.rep));
-    box.append(row);
+    row.addEventListener('click', () => { if (state.open.has(key)) state.open.delete(key); else state.open.add(key); renderConv(); });
+    wrap.append(row);
+    if (open) {
+      const g = displayGroup();
+      const units = e.units.filter((u) => visible(u, CONV_CATS[tab]) && fin(gaugeOf(u))).sort((a, b) => gaugeOf(b) - gaugeOf(a) || (expPct(a, g) ?? 99) - (expPct(b, g) ?? 99));
+      wrap.append(el('div', { class: 'unit-list' }, ...units.map((u) => unitRow(u, { name: tab === 'med' ? u.m : u.m, round: true }))));
+    }
+    box.append(wrap);
   }
+}
+
+function unitRow(u, { name = u.m, round = true } = {}) {
+  const r = el('div', { class: 'unit-row', role: 'button', tabindex: 0 }, el('strong', { text: name }), round ? el('span', { class: 'round-tag', text: u.r }) : el('span'), fitLine(gaugeOf(u)), favButton(u));
+  r.addEventListener('click', () => openDetail(u));
+  r.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') openDetail(u); });
+  return r;
 }
 
 /* ───────── Position chart ───────── */
@@ -712,9 +728,7 @@ function lineGroup(e, autoOpen, opts = {}) {
     const units = opts.hideRound ? e.units : [...e.units].sort((a, b) => (gaugeOf(b) ?? -1) - (gaugeOf(a) ?? -1));
     for (const u of units) {
       const name = e.faculty ? [shortUni(u.u), ...variantOf(u.m)].join(' ') : u.m;
-      const r = el('button', { class: 'unit-row', type: 'button' }, el('strong', { text: name }), opts.hideRound ? '' : el('span', { class: 'round-tag', text: u.r }), fitLine(gaugeOf(u)));
-      r.addEventListener('click', () => openDetail(u));
-      list.append(r);
+      list.append(unitRow(u, { name, round: !opts.hideRound }));
     }
     wrap.append(list);
   }
@@ -1098,6 +1112,7 @@ function renderInput() {
 
   const region = $('input-region');
   region.replaceChildren(el('option', { value: '', text: '해당 없음' }), ...state.common.regions.map((r) => el('option', { value: r, text: r, selected: state.settings.region === r ? true : null })));
+  for (const sel of document.querySelectorAll('#input-form select, #input-region')) enhanceSelect(sel);
   $('input-status').textContent = GNAME[streamOf(rec)];
 }
 function infoText(subject, v) {
@@ -1170,6 +1185,101 @@ async function applyInput() {
   await refresh();
 }
 
+/* ───────── Menu select (native select 대체) ───────── */
+
+let openMenu = null;
+function closeMenu() {
+  if (!openMenu) return;
+  openMenu.pop.remove();
+  openMenu.trigger.setAttribute('aria-expanded', 'false');
+  document.removeEventListener('pointerdown', openMenu.outside, true);
+  window.removeEventListener('resize', closeMenu);
+  window.removeEventListener('scroll', openMenu.scroll, true);
+  const t = openMenu.trigger;
+  openMenu = null;
+  t.focus({ preventScroll: true });
+}
+function syncMenu(sel) {
+  const t = sel._menu;
+  if (!t) return;
+  const opt = sel.selectedOptions[0];
+  t.firstChild.textContent = opt ? opt.textContent : '';
+  t.disabled = sel.disabled;
+}
+function enhanceSelect(sel) {
+  if (sel._menu) { syncMenu(sel); return sel; }
+  const trigger = el('button', { type: 'button', class: sel.className + ' menu-trigger', 'aria-haspopup': 'listbox', 'aria-expanded': 'false', 'aria-label': sel.getAttribute('aria-label') || '' }, el('span', { class: 'menu-value' }));
+  sel._menu = trigger;
+  sel.classList.add('menu-native');
+  sel.tabIndex = -1;
+  sel.setAttribute('aria-hidden', 'true');
+  sel.after(trigger);
+  sel.addEventListener('change', () => syncMenu(sel));
+  trigger.addEventListener('click', (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (openMenu && openMenu.trigger === trigger) { closeMenu(); return; }
+    closeMenu();
+    showMenu(sel, trigger);
+  });
+  trigger.addEventListener('keydown', (ev) => {
+    if (['ArrowDown', 'ArrowUp'].includes(ev.key) && !openMenu) { ev.preventDefault(); showMenu(sel, trigger); }
+  });
+  syncMenu(sel);
+  return sel;
+}
+function showMenu(sel, trigger) {
+  const pop = el('div', { class: 'menu-pop', role: 'listbox', 'aria-label': sel.getAttribute('aria-label') || '' });
+  const items = [];
+  const addOption = (o) => {
+    const item = el('button', { type: 'button', class: 'menu-item' + (o.selected ? ' is-selected' : ''), role: 'option', 'aria-selected': o.selected ? 'true' : 'false', disabled: o.disabled ? true : null, text: o.textContent });
+    item.addEventListener('click', () => {
+      if (sel.value !== o.value) { sel.value = o.value; sel.dispatchEvent(new Event('change', { bubbles: true })); }
+      closeMenu();
+    });
+    items.push(item);
+    return item;
+  };
+  for (const child of sel.children) {
+    if (child.tagName === 'OPTGROUP') {
+      pop.append(el('div', { class: 'menu-group', text: child.label }));
+      for (const o of child.children) pop.append(addOption(o));
+    } else pop.append(addOption(child));
+  }
+  document.body.append(pop);
+  const r = trigger.getBoundingClientRect();
+  const width = Math.max(r.width, 180);
+  const left = Math.min(Math.max(8, r.left), window.innerWidth - width - 8);
+  pop.style.minWidth = width + 'px';
+  pop.style.left = left + window.scrollX + 'px';
+  const below = window.innerHeight - r.bottom - 12;
+  const above = r.top - 12;
+  const h = Math.min(pop.scrollHeight, 340);
+  if (below < h && above > below) {
+    pop.style.maxHeight = Math.min(340, above) + 'px';
+    pop.style.top = r.top + window.scrollY - Math.min(h, above) - 6 + 'px';
+  } else {
+    pop.style.maxHeight = Math.min(340, Math.max(160, below)) + 'px';
+    pop.style.top = r.bottom + window.scrollY + 6 + 'px';
+  }
+  trigger.setAttribute('aria-expanded', 'true');
+  const current = items.find((i) => i.classList.contains('is-selected')) || items.find((i) => !i.disabled);
+  if (current) { pop.scrollTop = Math.max(0, current.offsetTop - pop.clientHeight / 2); current.focus({ preventScroll: true }); }
+  pop.addEventListener('keydown', (ev) => {
+    const enabled = items.filter((i) => !i.disabled);
+    const idx = enabled.indexOf(document.activeElement);
+    if (ev.key === 'ArrowDown') { ev.preventDefault(); enabled[Math.min(enabled.length - 1, idx + 1)]?.focus(); }
+    else if (ev.key === 'ArrowUp') { ev.preventDefault(); enabled[Math.max(0, idx - 1)]?.focus(); }
+    else if (ev.key === 'Escape' || ev.key === 'Tab') { ev.preventDefault(); ev.stopPropagation(); closeMenu(); }
+  });
+  const outside = (ev) => { if (!pop.contains(ev.target) && ev.target !== trigger && !trigger.contains(ev.target)) closeMenu(); };
+  const scroll = (ev) => { if (!pop.contains(ev.target)) closeMenu(); };
+  openMenu = { pop, trigger, outside, scroll };
+  document.addEventListener('pointerdown', outside, true);
+  window.addEventListener('resize', closeMenu);
+  window.addEventListener('scroll', scroll, true);
+}
+
 /* ───────── Start ───────── */
 
 const QUICK_DEFAULTS = {
@@ -1198,14 +1308,16 @@ function renderQuick() {
   const numberCell = (key, head) => {
     const input = el('input', { class: 'cf-value', type: 'number', inputmode: 'numeric', placeholder: '—', value: quick.values[key] ?? '', 'aria-label': key + ' 표준점수' });
     input.addEventListener('input', () => { quick.values[key] = input.value; });
-    return el('label', { class: 'cf' }, head, input);
+    const cell = el('div', { class: 'cf' }, head, input);
+    cell.addEventListener('click', (ev) => { if (ev.target === cell) input.focus(); });
+    return cell;
   };
   const gradeCell = (key) => {
     const sel = el('select', { class: 'cf-value cf-grade', 'aria-label': key + ' 등급' });
     sel.append(el('option', { value: '', text: '—' }));
     for (let g = 1; g <= 9; g++) sel.append(el('option', { value: g, text: g + '등급', selected: String(quick.values[key]) === String(g) ? true : null }));
     sel.addEventListener('change', () => { quick.values[key] = sel.value; });
-    return el('label', { class: 'cf' }, el('span', { class: 'cf-name', text: key }), sel);
+    return el('div', { class: 'cf' }, el('span', { class: 'cf-name', text: key }), sel);
   };
   const inqOptions = (idx) => [...SOCIAL, ...SCIENCE].map((n) => [n, n, quick.inq.includes(n) && quick.inq[idx] !== n]);
   box.append(
@@ -1216,6 +1328,7 @@ function renderQuick() {
     numberCell('탐구2', pick(inqOptions(1), quick.inq[1], (v) => { quick.inq[1] = v; renderQuick(); }, '탐구 2')),
     gradeCell('한국사'),
   );
+  for (const sel of box.querySelectorAll('select')) enhanceSelect(sel);
   $('start-raw').hidden = !state.common.raw[state.edition];
 }
 async function submitQuick(ev) {
@@ -1323,6 +1436,7 @@ function showSheet(id) {
   document.body.style.overflow = 'hidden';
 }
 function hideSheets() {
+  closeMenu();
   for (const s of document.querySelectorAll('.sheet')) s.hidden = true;
   $('scrim').hidden = true;
   document.body.style.overflow = '';
