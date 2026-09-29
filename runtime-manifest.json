@@ -1,0 +1,89 @@
+{
+  "sha256": "9a2a2fda9975b1cc03559d9fd5148216b4f5823397140ea2d21cbf318a922a48",
+  "files": [
+    {
+      "path": "runtime/admission_sim/cache/september_official_20260929_restrict.json",
+      "bytes": 344084
+    },
+    {
+      "path": "runtime/admission_sim/cache/september_official_20260929_units.json",
+      "bytes": 3294985
+    },
+    {
+      "path": "runtime/admission_sim/data/ux7_public_september_20260929.json",
+      "bytes": 1115080
+    },
+    {
+      "path": "runtime/admission_sim/eligibility.py",
+      "bytes": 5881
+    },
+    {
+      "path": "runtime/admission_sim/perf/__init__.py",
+      "bytes": 70
+    },
+    {
+      "path": "runtime/admission_sim/perf/fast_engine.py",
+      "bytes": 11810
+    },
+    {
+      "path": "runtime/admission_sim/perf/formula_plan.pkl",
+      "bytes": 2639669
+    },
+    {
+      "path": "runtime/admission_sim/ux7_api.py",
+      "bytes": 2960
+    },
+    {
+      "path": "runtime/admission_sim/web_runtime.py",
+      "bytes": 13417
+    },
+    {
+      "path": "runtime/public/audit/build.json",
+      "bytes": 83
+    },
+    {
+      "path": "runtime/public/generated/quantiles_2027.npz",
+      "bytes": 5985078
+    },
+    {
+      "path": "runtime/public/generated/scorer_2027_public/maps.npz",
+      "bytes": 1060864
+    },
+    {
+      "path": "runtime/public/generated/scorer_2027_public/scoring.json",
+      "bytes": 6001457
+    },
+    {
+      "path": "runtime/source/scoring_engine/engine.py",
+      "bytes": 13659
+    },
+    {
+      "path": "runtime/source/scoring_engine/runtime.py",
+      "bytes": 3611
+    },
+    {
+      "path": "runtime/source/scoring_engine/score.py",
+      "bytes": 2943
+    },
+    {
+      "path": "runtime/source/september_official_20260929/september_official_20260929_runtime.py",
+      "bytes": 6857
+    },
+    {
+      "path": "runtime/vendor/openpyxl/LICENCE.rst",
+      "bytes": 1131
+    },
+    {
+      "path": "runtime/vendor/openpyxl/__init__.py",
+      "bytes": 75
+    },
+    {
+      "path": "runtime/vendor/openpyxl/formula/__init__.py",
+      "bytes": 33
+    },
+    {
+      "path": "runtime/vendor/openpyxl/formula/tokenizer.py",
+      "bytes": 15088
+    }
+  ]
+}
