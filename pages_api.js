@@ -1,5 +1,5 @@
 /* The Pages build uses a worker instead of the local Python HTTP API. */
-const pagesWorker = new Worker('./pages_worker.js?v=22eb7294ee');
+const pagesWorker = new Worker('./pages_worker.js?v=638d2b2cc5');
 const pagesPending = new Map();
 let pagesSequence = 0;
 pagesWorker.onmessage = ({ data }) => {

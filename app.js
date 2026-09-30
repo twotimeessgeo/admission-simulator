@@ -17,12 +17,36 @@ const SHORT = {
   '지구과학 Ⅰ': '지구1', '물리학 Ⅱ': '물리2', '화학 Ⅱ': '화학2', '생명과학 Ⅱ': '생명2', '지구과학 Ⅱ': '지구2',
   '수학(확통)': '확통', '수학(미적)': '미적', '수학(기하)': '기하',
 };
-const CATEGORIES = ['인문사회', '과학기술', '의치한약수', '계약학과', '초등교육', '예체능'];
+// 학과 분야: 데이터의 큰 분류(u.c)는 그대로 두고, 학과명으로 한 단계 더 나눈다. 계열 판정·노출 규칙은 u.c를 쓴다.
+const FIELDS = ['인문', '사회', '상경', '교육', '자연', '공학', '보건', '의치한약수', '자유전공', '예체능'];
+const FIELD_GROUP = { 인문: 'H', 사회: 'H', 상경: 'H', 자연: 'S', 공학: 'S', 보건: 'S', 의치한약수: 'S', 예체능: 'H' };
+const FIELD_RE = {
+  free: /자율(?!주행)|자유|무전공|광역|리버럴|창의융합학부|미래융합/,
+  edu: /교육|사범/,
+  health: /간호|건강|물리치료|작업치료|임상병리|방사선|치위생|치기공|안경|응급|언어치료|언어청각|청각|재활|보건|의료(?!.*공학)|요양|병원|한약/,
+  biz: /경영|경제|경상|(?<!사)회계|세무|무역|통상|금융|보험|재무|상경|유통|물류|관광|호텔|외식|조리|제과|비즈니스|Business|마케팅|부동산|창업|벤처|중소기업|컨벤션|호스피탈리티|Hospitality|투어리즘|항공서비스|MICE|커머스/,
+  soc: /정치|외교|행정|법|경찰|사회|미디어|언론|신문|방송|광고|홍보|커뮤니케이션|심리|복지|아동|청소년|가족|소비자|문헌|도시|지리|국제|공공|안보|국방|군사|상담|비서|보육|의류|주거|가정|콘텐츠|게임|영상|영화|안전|교정|보호|지식융합/,
+  eng: /(?<!가)공학|공과|공대|조종|컴퓨터|소프트웨어|전기|전자|반도체|기계|건축|건설|토목|화공|재료|신소재|정보|통신|인공지능|AI|데이터|로봇|자동차|모빌리티|항공|조선|에너지|원자력|디스플레이|시스템|IT|ICT|보안|메카|산업|게임|스마트|드론|철도|소방|방재|디지털|공간|도시|조경|플랜트|기관|전산|사이버|클라우드|인터넷|메타버스|배터리|이차전지|미래차|기술|테크/,
+  engH: /(?<!가)공학|조종|컴퓨터|소프트웨어|전기|전자|반도체|기계|인공지능|데이터|로봇|자동차|드론|철도|클라우드|인터넷|배터리|이차전지|테크/,
+  sci: /식물|생명|생물|(?<!문)화학|물리|수학|통계|식품|농|원예|산림|동물|축산|해양|수산|환경|지구|천문|우주|바이오|신약|와인|푸드|자연|과학/,
+  sciH: /식물|생명|생물|(?<!문)화학|물리|수학|통계|식품|원예|산림|동물|축산|수산|천문|바이오|신약|와인|푸드|과학과/,
+};
+const FIELD_H = [['상경', FIELD_RE.biz], ['사회', FIELD_RE.soc], ['보건', FIELD_RE.health], ['공학', FIELD_RE.engH], ['자연', FIELD_RE.sciH]];
+const FIELD_S = [['보건', FIELD_RE.health], ['상경', /경영(?!.*공학)|금융|(?<!사)회계|마케팅|관광|항공서비스|서비스학과/], ['사회', /행정|경찰|사회학|군사|국방/], ['공학', FIELD_RE.eng], ['자연', FIELD_RE.sci], ['상경', FIELD_RE.biz], ['사회', FIELD_RE.soc]];
+function fieldOf(u) {
+  if (u._f) return u._f;
+  let f = u.c === '의치한약수' || u.c === '예체능' ? u.c : u.c === '초등교육' ? '교육' : u.c === '계약학과' ? '공학' : null;
+  if (!f) {
+    if (FIELD_RE.free.test(u.m)) f = '자유전공';
+    else if (FIELD_RE.edu.test(u.m)) f = '교육';
+    else f = ((u.c === '인문사회' ? FIELD_H : FIELD_S).find(([, re]) => re.test(u.m)) || [u.c === '인문사회' ? '인문' : '자연'])[0];
+  }
+  return (u._f = f);
+}
 const FACULTY = { 의: '의과대학', 치: '치과대학', 한: '한의과대학', 약: '약학대학', 수: '수의과대학', 교: '초등교육' };
 const FACULTY_MONO = { 의: '의', 치: '치', 한: '한', 약: '약', 수: '수', 교: '교대' };
 const SUB_ORDER = { 의: 0, 치: 1, 한: 2, 약: 3, 수: 4 };
 const RANK_LABELS = ['서울대', '연고', '서성한', '중경외시', '건동홍', '국숭세단', '광명상가'];
-const MED_LABELS = { 의: '의대', 치: '치대', 한: '한의대', 약: '약대', 수: '수의대' };
 const GKEY = { S: 'science', H: 'humanities', A: 'all' };
 const GNAME = { S: '이과', H: '문과', A: '전체' };
 const ALIAS = {
@@ -35,7 +59,6 @@ const ALIAS = {
 const MAJOR_ALIAS = { 컴공: '컴퓨터', 전전: '전자전기', 경영: '경영', 경제: '경제', 기계: '기계', 전자: '전자', 약대: '약학', 의대: '의예', 치대: '치의', 한의대: '한의', 수의대: '수의', 교대: '초등교육' };
 const INITIALS = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
 const HEART = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.2 4.9 13.3a4.6 4.6 0 0 1 6.5-6.6l.6.6.6-.6a4.6 4.6 0 0 1 6.5 6.6Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
-const CALC_SHADES = ['#3b3b3b', '#6e6e6e', '#9a9a9a', '#bdbdbd', '#d6d6d6', '#e4e4e4'];
 
 /* ───────── State ───────── */
 
@@ -46,8 +69,8 @@ const state = {
   korean: saved.korean || '국어(화작)',
   group: saved.group || null,
   basis: saved.basis === 'pct' ? 'pct' : 'std',
-  recCat: saved.recCat || null,
-  findCat: saved.findCat || '',
+  recCat: FIELDS.includes(saved.recCat) ? saved.recCat : '',
+  findCat: FIELDS.includes(saved.findCat) ? saved.findCat : '',
   findRound: '',
   query: '',
   open: new Set(),
@@ -117,16 +140,14 @@ function tierOf(g, u = null) {
     const reason = u && u.th && !fin(u.th[1]) && u.cut_status ? u.cut_status : '입결 없음';
     return { key: 'none', label: reason };
   }
-  if (g >= 90) return { key: 'safe', label: '여유' };
   if (g >= 80) return { key: 'safe', label: '안정' };
-  if (g >= 60) return { key: 'fit', label: '적정' };
-  if (g >= 50) return { key: 'fit', label: '경계' };
+  if (g >= 50) return { key: 'fit', label: '적정' };
   if (g >= 20) return { key: 'reach', label: '소신' };
   if (g >= 10) return { key: 'up', label: '상향' };
   return { key: 'hard', label: '어려움' };
 }
 
-// backend index_value 과 같은 식 (적정·예상·소신 = 80·50·20 기준선 보간, 5–95 제한)
+// backend index_value 과 같은 식 (안정·적정·소신 = 80·50·20 기준선 보간, 5–95 제한)
 function lineIndex(score, th) {
   if (!fin(score) || !th || th.some((x) => !fin(x))) return null;
   const [a, e, r] = th;
@@ -194,6 +215,7 @@ function toggleFav(u) {
   if (state.favorites.has(key)) { state.favorites.delete(key); if (state.slots[u.r] === key) delete state.slots[u.r]; }
   else state.favorites.add(key);
   persist();
+  renderFavCount();
   if (state.view === 'list') renderList();
 }
 function toast(text) {
@@ -213,7 +235,7 @@ function chosung(s) {
 
 async function fetchJSON(url, body) {
   if (url.startsWith('/api/')) return pagesRequest(url, body);
-  if (url.startsWith('/data/')) url = '.' + url + '?v=22eb7294ee';
+  if (url.startsWith('/data/')) url = '.' + url + '?v=638d2b2cc5';
   const res = await fetch(url, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {});
   const json = await res.json();
   if (!res.ok) throw new Error(json.error || '요청을 처리하지 못했습니다.');
@@ -287,7 +309,7 @@ function visible(u, category = null) {
   }
   return true;
 }
-function rankGroupFor(category) { return ['인문사회', '초등교육', '예체능'].includes(category) ? 'H' : category ? 'S' : myStream(); }
+function rankGroupFor(category) { return FIELD_GROUP[category] || myStream(); }
 function rankIdx(u, rg) { const i = data().rankIndex[rg].get(u.u); return i === undefined ? 500 : i; }
 function sortKey(u, category) {
   const e = expPct(u, rankGroupFor(category) === 'S' ? 'S' : 'H') ?? 99;
@@ -356,13 +378,6 @@ function renderReport() {
     el('thead', {}, el('tr', {}, el('th', { text: '구분' }), ...tallRows.map(([label]) => el('th', { text: label })))),
     el('tbody', {}, ...cols.map((c) => el('tr', {}, el('th', {}, el('span', { class: 'rt-area', text: c.head === inqHead ? '탐구' : c.head === '제2외국어/한문' ? '제2외국어' : c.head }), c.sub ? el('small', { class: 'rt-sub', text: c.sub }) : ''), ...tallRows.map(([, fn]) => fn(c))))));
   $('report').replaceChildren(wide, tall);
-
-  const g = myStream();
-  const std = state.schemes.get('★표점합');
-  const pct = state.schemes.get('★백분위합');
-  const top = (s) => (s && fin(s.percentiles[GKEY[g]]) ? GNAME[g] + ' 상위 ' + fmtPct(s.percentiles[GKEY[g]]) : '');
-  const meta = [['시험', EXAM_NAMES[state.edition], ''], ['계열', GNAME[g], ''], ['표준점수 합', std ? fmt(std.score, 0) : '—', top(std)], ['백분위 합', pct ? fmt(pct.score, 0) : '—', top(pct)]];
-  $('report-info').replaceChildren(...meta.map(([k, v, sub], i) => el('div', { class: 'meta-cell' + (i ? '' : ' is-exam') }, el('small', { text: k }), el('b', {}, v, sub ? el('em', { text: sub }) : ''))));
 }
 
 /* ───────── University scores ───────── */
@@ -392,13 +407,18 @@ function convEntries(tab) {
     const title = tab === 'med' ? '' : schemeLabel(code).full;
     list.push({ ...e, rep, n: units.length, exp: expPct(rep, g), my, score: row.score, label, title, code });
   }
+  const byUni = new Map();
+  for (const e of list) { if (!byUni.has(e.uni)) byUni.set(e.uni, []); byUni.get(e.uni).push(e); }
   if (tab !== 'med') {
     const best = new Map();
     const pref = tab === 'H' ? /인문|사회|통합/ : /자연|공학|통합/;
     const w = (e) => e.n + (pref.test(e.code) ? 0.5 : 0) - (/간호|예술|체육/.test(e.code) ? 100 : 0);
     for (const e of list) if (!best.has(e.uni) || w(best.get(e.uni)) < w(e)) best.set(e.uni, e);
     list = [...best.values()];
+    for (const e of list) e.units = [...groups.values()].filter((x) => x.uni === e.uni).flatMap((x) => x.units);
+    for (const e of list) e.alts = byUni.get(e.uni).filter((x) => x !== e && !/간호|예술|체육/.test(x.code));
   }
+  for (const e of list) e.schemes = new Set(e.units.filter((u) => visible(u, cat) && fin(gaugeOf(u))).map((u) => u.k)).size;
   list.sort((a, b) => a.exp - b.exp);
   const first = list.findIndex((e) => e.exp >= e.my);
   const at = first < 0 ? list.length : first;
@@ -412,30 +432,59 @@ function renderConv() {
   const list = convEntries(tab);
   const box = $('conv-list');
   box.replaceChildren();
+  box.classList.remove('is-all');
   if (!list.length) { box.append(el('div', { class: 'round-empty', text: '표시할 대학이 없습니다.' })); return; }
-  const max = Math.max(...list.map((e) => Math.max(e.my, e.exp))) * 1.08 / 100 * n;
-  const pos = (rank) => Math.max(0, Math.min(100, 100 * (1 - rank / max))).toFixed(1);
-  for (const e of list) {
+  // 가운데 = 합격선, 오른쪽 = 합격선보다 앞선 등수. 12행이 같은 눈금을 쓴다.
+  const span = Math.max(1, ...list.flatMap((e) => [e, ...(e.alts || [])].map((x) => Math.abs(x.exp - x.my) / 100 * n))) * 1.15;
+  const devOf = (x) => Math.max(-1, Math.min(1, (x.exp - x.my) / 100 * n / span)).toFixed(3);
+  const at = list.findIndex((e) => e.exp >= e.my);
+  const mid = at < 0 ? list.length : at;
+  const from = Math.max(0, Math.min(mid - 3, list.length - 6));
+  for (const [idx, e] of list.entries()) {
     const mine = e.my / 100 * n;
     const line = e.exp / 100 * n;
+    const dev = Math.max(-1, Math.min(1, (line - mine) / span)).toFixed(3);
     const t = tierOf(gaugeOf(e.rep));
     const key = 'conv:' + tab + ':' + e.key;
     const open = state.open.has(key);
-    const wrap = el('div', { class: 'conv-item' });
+    const wrap = el('div', { class: 'conv-item' + (idx < from || idx >= from + 6 ? ' is-extra' : ''), style: '--i:' + idx });
     const row = el('button', { class: 'conv-row', type: 'button', 'aria-expanded': open ? 'true' : 'false' },
       mono(e.uni),
-      el('span', { class: 'conv-name' }, el('strong', { text: shortUni(e.uni) }), el('small', e.title ? { title: e.title } : {}, e.label, el('span', { class: 'conv-score', text: fmt(e.score, 2) + '점' }))),
-      el('span', { class: 'conv-bar' },
-        el('span', { class: 'conv-fill', 'data-tier': t.key, style: `width:${pos(mine)}%` }),
-        el('i', { style: `left:${pos(line)}%`, title: '합격선 ' + fmtRank(line) })),
+      el('span', { class: 'conv-name' }, el('strong', { text: shortUni(e.uni) }), el('small', {}, el('span', { class: 'conv-score', text: fmt(e.score, 2) + '점' }))),
+      el('span', { class: 'conv-bar', style: '--d:' + dev },
+        el('span', { class: 'conv-fill', 'data-tier': t.key }),
+        el('i', { title: '합격선 ' + fmtRank(line) }),
+        ...(e.alts || []).map((a) => el('span', { class: 'conv-me is-alt', style: '--d:' + devOf(a), title: schemeName(a.code, e.uni) }, el('b'))),
+        el('span', { class: 'conv-me' }, el('b'))),
       el('span', { class: 'conv-rank', text: fmtRank(mine) }));
     wrap.append(row);
     collapsible(wrap, row, key, () => {
       const g = displayGroup();
       const units = e.units.filter((u) => visible(u, CONV_CATS[tab]) && fin(gaugeOf(u))).sort((a, b) => gaugeOf(b) - gaugeOf(a) || (expPct(a, g) ?? 99) - (expPct(b, g) ?? 99));
-      return unitList(units, (u) => unitRow(u, { name: u.m, round: true }));
+      const make = (u) => unitRow(u, { name: u.m, round: true });
+      const byK = new Map();
+      for (const u of units) { if (!byK.has(u.k)) byK.set(u.k, []); byK.get(u.k).push(u); }
+      if (byK.size < 2) return unitList(units, make);
+      const keys = [...byK.keys()].sort((a, b) => (b === e.code) - (a === e.code) || byK.get(b).length - byK.get(a).length);
+      const box = el('div', { class: 'scheme-groups' });
+      for (const k of keys) {
+        const us = byK.get(k);
+        const r = state.rows.get(us[0].i);
+        const lab = schemeLabel(k);
+        box.append(el('div', { class: 'scheme-head' + (k === e.code ? ' is-main' : '') },
+          schemeChip(k, e.uni),
+          el('b', { text: r ? fmt(r.score, 2) + '점' : '—' })), unitList(us, make, 5));
+      }
+      return box;
     }, open);
     box.append(wrap);
+  }
+  box.closest('.conv').classList.toggle('has-alts', list.some((e) => e.alts && e.alts.length));
+  const extra = box.querySelectorAll('.conv-item.is-extra').length;
+  if (extra) {
+    const more = el('button', { class: 'unit-more conv-rest', type: 'button', text: '나머지 ' + extra + '개' });
+    more.addEventListener('click', () => { box.classList.add('is-all'); more.remove(); });
+    box.append(more);
   }
 }
 
@@ -456,75 +505,7 @@ function unitRow(u, { name = u.m, round = true } = {}) {
   return r;
 }
 
-/* ───────── Position chart ───────── */
-
-function curveOf(basis, g) {
-  const c = data().curves;
-  const grid = c.grid;
-  if (g !== 'A') return { grid, q: c[basis][g] };
-  const key = basis + ':A';
-  if (!c[key]) {
-    const qs = c[basis].S; const qh = c[basis].H;
-    const ns = c.pop.S; const nh = c.pop.H;
-    const hi = Math.max(qs[0], qh[0]); const lo = Math.max(qs[qs.length - 1], qh[qh.length - 1]);
-    const scores = []; const pcts = [];
-    const steps = 900;
-    for (let i = 0; i <= steps; i++) {
-      const s = hi - (hi - lo) * i / steps;
-      scores.push(s);
-      pcts.push((ns * pctAtRaw(grid, qs, s) + nh * pctAtRaw(grid, qh, s)) / (ns + nh));
-    }
-    c[key] = { grid: pcts, q: scores };
-  }
-  return c[key];
-}
-function pctAtRaw(grid, q, s) {
-  // q: descending scores at ascending percentile grid
-  if (s >= q[0]) return grid[0];
-  if (s <= q[q.length - 1]) return grid[grid.length - 1];
-  let lo = 0; let hi = q.length - 1;
-  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (q[m] >= s) lo = m; else hi = m; }
-  const t = (q[lo] - s) / ((q[lo] - q[hi]) || 1);
-  return grid[lo] + t * (grid[hi] - grid[lo]);
-}
-function scoreAtRaw(grid, q, p) {
-  if (p <= grid[0]) return q[0];
-  if (p >= grid[grid.length - 1]) return q[q.length - 1];
-  let lo = 0; let hi = grid.length - 1;
-  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (grid[m] <= p) lo = m; else hi = m; }
-  const t = (p - grid[lo]) / ((grid[hi] - grid[lo]) || 1);
-  return q[lo] + t * (q[hi] - q[lo]);
-}
-
-function markers(g) {
-  const d = data();
-  const out = [];
-  const uniMedian = new Map();
-  for (const u of d.units) {
-    if (!inScope(u) || u.rg || u.pr || /\[만학\]/.test(u.m)) continue;
-    if (!['인문사회', '과학기술'].includes(u.c)) continue;
-    if (g === 'H' && u.c !== '인문사회') continue;
-    if (g === 'S' && u.c !== '과학기술') continue;
-    const v = u.tp[g] && u.tp[g][1];
-    if (!fin(v)) continue;
-    if (!uniMedian.has(u.u)) uniMedian.set(u.u, []);
-    uniMedian.get(u.u).push(v);
-  }
-  RANK_LABELS.forEach((label, gi) => {
-    const vals = [];
-    for (const [uni, arr] of uniMedian) if (d.rank_group[uni] === gi) vals.push(median(arr));
-    const m = median(vals);
-    if (fin(m)) out.push({ label, pct: m, med: false });
-  });
-  if (g !== 'H') {
-    for (const sub of ['의', '치', '한', '약', '수']) {
-      const vals = d.units.filter((u) => u.c === '의치한약수' && u.t === sub && !u.rg && !/\[만학\]/.test(u.m)).map((u) => u.tp[g] && u.tp[g][1]);
-      const m = median(vals);
-      if (fin(m)) out.push({ label: MED_LABELS[sub], pct: m, med: true });
-    }
-  }
-  return out;
-}
+/* ───────── Position ───────── */
 
 function renderPosition() {
   const g = displayGroup();
@@ -534,133 +515,57 @@ function renderPosition() {
   for (const b of $('basis-switch').children) b.classList.toggle('is-active', b.dataset.basis === basis);
   const pct = scheme ? scheme.percentiles[GKEY[g]] : null;
   $('pos-label').textContent = GNAME[g] + ' 상위';
+  const rank = fin(pct) ? pct / 100 * pop(g) : null;
+  const score = scheme ? scheme.score : null;
+  const prev = renderPosition.prev;
   if (document.body.classList.contains('is-entering') && fin(pct)) {
     countTo($('pos-pct'), 50, pct, fmtPct, { log: true });
-    countTo($('pos-rank'), pop(g) / 2, pct / 100 * pop(g), fmtRank, { log: true });
+    countTo($('pos-rank'), pop(g) / 2, rank, fmtRank, { log: true });
+    $('pos-score').textContent = fin(score) ? fmt(score, 0) : '—';
+  } else if (prev && fin(pct)) {
+    countTo($('pos-pct'), prev.pct, pct, fmtPct, { log: true, duration: 520 });
+    countTo($('pos-rank'), prev.rank, rank, fmtRank, { log: true, duration: 520 });
+    countTo($('pos-score'), prev.score, score, (x) => fmt(x, 0), { duration: 520 });
   } else {
     $('pos-pct').textContent = fmtPct(pct);
-    $('pos-rank').textContent = fin(pct) ? fmtRank(pct / 100 * pop(g)) : '—';
+    $('pos-rank').textContent = fin(rank) ? fmtRank(rank) : '—';
+    $('pos-score').textContent = fin(score) ? fmt(score, 0) : '—';
   }
+  renderPosition.prev = fin(pct) ? { pct, rank, score } : null;
   $('pos-score-label').textContent = basis === 'std' ? '표준점수 합' : '백분위 합';
-  $('pos-score').textContent = scheme ? fmt(scheme.score, 0) : '—';
-  drawChart(g, basis, scheme ? scheme.score : null);
-}
-
-function drawChart(g, basis, myScore) {
-  const box = $('position-chart');
-  const W = Math.max(300, box.clientWidth || 800);
-  const narrow = W < 560;
-  const H = narrow ? 230 : 250;
-  const top = narrow ? 86 : 70;
-  const bottom = 28;
-  const { grid, q } = curveOf(basis, g);
-  let hiScore = scoreAtRaw(grid, q, 0.005);
-  let loScore = scoreAtRaw(grid, q, 40);
-  if (fin(myScore)) { hiScore = Math.max(hiScore, myScore + 2); loScore = Math.min(loScore, myScore - 4); }
-  const x = (s) => 8 + (W - 16) * (s - loScore) / (hiScore - loScore);
-  const N = 180;
-  const h = (hiScore - loScore) / N * 4;
-  const pts = [];
-  for (let i = 0; i <= N; i++) {
-    const s = loScore + (hiScore - loScore) * i / N;
-    const dens = Math.max(0, (pctAtRaw(grid, q, s - h) - pctAtRaw(grid, q, s + h)) / (2 * h));
-    pts.push([s, dens]);
-  }
-  const sm = pts.map((p, i) => { let a = 0; let w = 0; for (let k = -8; k <= 8; k++) { const j = i + k; if (j < 0 || j > N) continue; const wt = 9 - Math.abs(k); a += pts[j][1] * wt; w += wt; } return [p[0], a / w]; });
-  const maxD = Math.max(...sm.map((p) => p[1])) || 1;
-  const y = (d) => H - bottom - (H - bottom - top) * d / maxD;
-  const NS = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(NS, 'svg');
-  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  svg.setAttribute('role', 'img');
-  svg.setAttribute('aria-label', '분포와 내 위치');
-  const add = (tag, attrs, parent = svg) => { const n = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v); parent.append(n); return n; };
-  const path = sm.map((p, i) => `${i ? 'L' : 'M'}${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join('');
-  add('path', { d: `${path}L${x(hiScore).toFixed(1)},${H - bottom}L${x(loScore).toFixed(1)},${H - bottom}Z`, class: 'pc-area' });
-  if (fin(myScore)) {
-    const above = sm.filter((p) => p[0] >= myScore);
-    if (above.length > 1) {
-      const pa = above.map((p, i) => `${i ? 'L' : 'M'}${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join('');
-      add('path', { d: `M${x(myScore).toFixed(1)},${H - bottom}L${x(myScore).toFixed(1)},${y(above[0][1]).toFixed(1)}${pa.replace(/^M/, 'L')}L${x(hiScore).toFixed(1)},${H - bottom}Z`, class: 'pc-above' });
-    }
-  }
-  add('path', { d: path, class: 'pc-line' });
-  add('line', { x1: 8, x2: W - 8, y1: H - bottom, y2: H - bottom, class: 'pc-base' });
-  // 상위 % 눈금
-  const ticks = [30, 10, 5, 1, 0.1, 0.01];
-  let lastX = -99;
-  for (const t of ticks) {
-    const s = scoreAtRaw(grid, q, t);
-    if (s < loScore || s > hiScore) continue;
-    const tx = x(s);
-    if (tx - lastX < 42) continue;
-    lastX = tx;
-    const gTick = add('g', { class: 'pc-tick' });
-    add('line', { x1: tx, x2: tx, y1: H - bottom, y2: H - bottom + 4 }, gTick);
-    const tt = add('text', { x: tx, y: H - 8, 'text-anchor': 'middle' }, gTick);
-    tt.textContent = t + '%';
-  }
-  // 대학·의대 라인 표식
-  let marks = markers(g).map((m) => ({ ...m, s: scoreAtRaw(grid, q, m.pct) })).filter((m) => m.s >= loScore && m.s <= hiScore);
-  if (narrow && fin(myScore)) {
-    const myP = pctAtRaw(grid, q, myScore);
-    marks = marks.sort((a, b) => Math.abs(Math.log10(a.pct / myP)) - Math.abs(Math.log10(b.pct / myP))).slice(0, 5);
-  }
-  marks.sort((a, b) => a.s - b.s);
-  const lanes = narrow ? [top - 64, top - 48, top - 32, top - 16] : [top - 50, top - 32, top - 14];
-  const laneEnd = lanes.map(() => -99);
-  const placed = [];
-  for (const m of marks) {
-    const mx = x(m.s);
-    const w = m.label.length * (narrow ? 11 : 12) + 10;
-    const lane = laneEnd.findIndex((end) => mx - w / 2 > end + 4);
-    if (lane < 0) continue;
-    laneEnd[lane] = mx + w / 2;
-    placed.push({ m, mx, ly: lanes[lane] });
-  }
-  const gLines = add('g', { class: 'pc-mark-lines' });
-  for (const { m, mx, ly } of placed) {
-    const gm = add('g', { class: 'pc-mark' + (m.med ? ' is-med' : '') }, gLines);
-    add('line', { x1: mx, x2: mx, y1: ly + 4, y2: y(sm.reduce((best, p) => (Math.abs(p[0] - m.s) < Math.abs(best[0] - m.s) ? p : best))[1]) }, gm);
-    add('circle', { cx: mx, cy: ly + 4, r: 2.5 }, gm);
-  }
-  const gLabels = add('g', { class: 'pc-mark-labels' });
-  for (const { m, mx, ly } of placed) {
-    const t = add('text', { x: mx, y: ly, 'text-anchor': 'middle', class: m.med ? 'is-med' : '' }, gLabels);
-    t.textContent = m.label;
-  }
-  if (fin(myScore)) {
-    const mx = x(myScore);
-    const gm = add('g', { class: 'pc-me' });
-    add('line', { x1: mx, x2: mx, y1: top - 4, y2: H - bottom }, gm);
-    add('circle', { cx: mx, cy: H - bottom, r: 4 }, gm);
-    const t = add('text', { x: mx + (mx > W - 40 ? -8 : 8), y: top + 8, 'text-anchor': mx > W - 40 ? 'end' : 'start' }, gm);
-    t.textContent = '나';
-  }
-  box.replaceChildren(svg);
 }
 
 /* ───────── Recommendations ───────── */
 
-function defaultCategory() { return myStream() === 'S' ? '과학기술' : '인문사회'; }
+function defaultCategory() { return ''; }
+// 보이는 학과가 하나라도 있는 분야만 칩으로 둔다.
+function liveFields() {
+  const has = new Set();
+  for (const u of data().units) { const f = fieldOf(u); if (!has.has(f) && visible(u, f)) has.add(f); }
+  return FIELDS.filter((f) => has.has(f));
+}
 function renderRecCategory() {
+  const fields = liveFields();
+  if (state.recCat && !fields.includes(state.recCat)) state.recCat = '';
   const cur = state.recCat || defaultCategory();
-  $('rec-category').replaceChildren(...CATEGORIES.map((c) => el('button', {
-    class: 'tw-chip' + (c === cur ? ' is-active' : ''), type: 'button', text: c,
-    onclick: () => { state.recCat = c; persist(); renderRecCategory(); renderRecs(); },
+  $('rec-category').replaceChildren(...['', ...fields].map((c) => el('button', {
+    class: 'tw-chip' + (c === cur ? ' is-active' : ''), type: 'button', text: c || '전체',
+    onclick: () => { state.recCat = c; persist(); renderRecCategory(); renderRecs(); swapIn('recs'); },
   })));
 }
 function pickCard(u, { challenge = false, slot = null } = {}) {
   const faculty = u.c === '의치한약수' ? u.t : u.c === '초등교육' ? '교' : null;
   const card = el('div', { class: 'pick' + (challenge ? ' is-challenge' : '') + (slot ? ' is-slot' : ''), role: 'button', tabindex: 0 });
-  card.append(mono(u.u), el('span', { class: 'pick-name' }, el('small', {}, shortUni(u.u), challenge ? el('span', { class: 'pick-tag', text: '도전' }) : ''), el('strong', { text: u.m })), favButton(u), fitLine(gaugeOf(u), u));
+  card.append(mono(u.u), el('span', { class: 'pick-name' }, el('small', {}, shortUni(u.u)), el('strong', { text: u.m })), favButton(u), fitLine(gaugeOf(u), u));
   card.addEventListener('click', () => openDetail(u));
   card.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') openDetail(u); });
   void faculty;
   return card;
 }
 function recGroups(category, round) {
-  const pool = data().units.filter((u) => u.c === category && u.r === round && visible(u, category) && fin(gaugeOf(u)));
+  // '전체'는 내 계열(문과면 인문사회·초등교육, 이과면 나머지)의 학과만.
+  const mine = (u) => (['인문사회', '초등교육'].includes(u.c) ? 'H' : 'S') === myStream();
+  const pool = data().units.filter((u) => (category ? fieldOf(u) === category : u.c !== '예체능' && mine(u)) && u.r === round && visible(u, category) && fin(gaugeOf(u)));
   const med = category === '의치한약수';
   const rg = rankGroupFor(category) === 'S' ? 'S' : 'H';
   const map = new Map();
@@ -678,7 +583,7 @@ function recGroups(category, round) {
     if (!e.units.length) continue;
     e.best = Math.max(...e.units.map(gaugeOf));
     const line = median(e.units.map((u) => expPct(u, rg)));
-    e.sort = med ? [SUB_ORDER[e.all[0].t] ?? 5, line ?? 99] : category === '초등교육' ? [0, line ?? 99] : [rankIdx(e.all[0], rg), line ?? 99];
+    e.sort = med ? [SUB_ORDER[e.all[0].t] ?? 5, line ?? 99] : category === '교육' ? [0, line ?? 99] : [rankIdx(e.all[0], rg), line ?? 99];
     groups.push(e);
   }
   groups.sort((a, b) => cmpKey(a.sort, b.sort));
@@ -686,31 +591,391 @@ function recGroups(category, round) {
   if (main.length < 3) main = groups.filter((e) => e.best >= 35).slice(0, 5);
   const first = main.length ? groups.indexOf(main[0]) : groups.length;
   const challenge = groups.slice(0, first).find((e) => e.best < 50) || null;
-  return { main, challenge };
+  return { main, challenge, all: groups };
+}
+// 내 점수대 대학: 군마다 소신 이상인 대학을 대학 순서대로 최대 8곳, 대표 학과와 판정만 표로 보여준다.
+function leadOf(e) {
+  const rg = displayGroup();
+  const ok = e.units.filter((u) => gaugeOf(u) >= 50);
+  const pool = ok.length ? ok : e.units;
+  return [...pool].sort((a, b) => (expPct(a, rg) ?? 99) - (expPct(b, rg) ?? 99))[0];
+}
+function lineSlices(category, round) {
+  return recGroups(category, round).all.filter((e) => e.best >= 20).slice(0, 8).map((e) => ({ uni: e.uni, u: leadOf(e) })).filter((x) => x.u);
 }
 function renderRecs() {
   const category = state.recCat || defaultCategory();
   const box = $('recs');
   box.replaceChildren();
   const rerender = () => renderRecs();
-  const all = ['가', '나', '다'].map((round) => [round, recGroups(category, round)]);
-  if (all.every(([, r]) => !r.main.length && !r.challenge)) { box.append(el('div', { class: 'round-empty is-all', text: '추천할 대학이 없습니다.' })); return; }
-  for (const [round, { main, challenge }] of all) {
+  // 대학을 행으로, 펼치면 소신 이상 학과가 뜬다(대표 학과가 맨 위).
+  const cols = ['가', '나', '다'].map((round) => [round, recGroups(category, round).all.filter((e) => e.best >= 20).slice(0, 8)]);
+  if (cols.every(([, xs]) => !xs.length)) { box.append(el('div', { class: 'round-empty is-all', text: '추천할 대학이 없습니다.' })); return; }
+  for (const [round, xs] of cols) {
     const col = el('div', { class: 'round' }, el('div', { class: 'round-head' }, el('h3', { text: round + '군' })));
-    if (!main.length && !challenge) col.append(el('div', { class: 'round-empty is-compact', text: '없음' }));
-    if (challenge) col.append(lineGroup(challenge, false, { rerender, hideRound: true, challenge: true }));
-    for (const e of main) col.append(lineGroup(e, false, { rerender, hideRound: true }));
+    if (!xs.length) col.append(el('div', { class: 'round-empty is-compact', text: '없음' }));
+    xs.forEach((e, i) => { const g = lineGroup(e, false, { rerender, hideRound: true, table: true }); g.style.setProperty('--i', i); col.append(g); });
     box.append(col);
   }
+}
+
+/* ───────── 돌림판 (이스터에그) ─────────
+   '내 점수대 대학' 또는 '담은 학과'를 칸으로 두는 서커스 돌림판. 당첨된 칸은 빼고 다시 돌릴 수 있다. */
+function wheelSlices(round = state.wheelRound || '가', useOut = true) {
+  const d = data();
+  let xs;
+  if (state.wheelSource === 'fav') xs = [...state.favorites].map((k) => d.byKey.get(k)).filter((u) => u && u.r === round).map((u) => ({ uni: u.u, u }));
+  else xs = lineSlices(state.recCat || defaultCategory(), round);
+  const out = (useOut && state.wheelOut) || new Set();
+  return xs.filter((x) => !out.has(unitKey(x.u))).slice(0, 12);
+}
+function openWheel() {
+  state.wheelOut = new Set();
+  state.wheelPick = null;
+  state.slotHold = {}; state.slotPick = {};
+  renderWheel();
+  showSheet('sheet-wheel');
+}
+function renderWheel() {
+  const body = $('wheel-body');
+  body.replaceChildren();
+  state.wheelBusy = false;
+  const round = state.wheelRound || '가';
+  const src = state.wheelSource || 'line';
+  const seg = (items, cur, onPick) => el('div', { class: 'tw-segmented' }, ...items.map(([v, label]) => el('button', { type: 'button', class: v === cur ? 'is-active' : '', text: label, onclick: () => { if (!state.wheelBusy && v !== cur) onPick(v); } })));
+  const reset = () => { state.wheelOut = new Set(); state.wheelPick = null; state.slotHold = {}; state.slotPick = {}; renderWheel(); };
+  body.append(el('div', { class: 'wheel-controls' },
+    seg([['가', '가군'], ['나', '나군'], ['다', '다군'], ['*', '한 번에']], round, (v) => { state.wheelRound = v; reset(); }),
+    seg([['line', '내 점수대'], ['fav', '담은 학과']], src, (v) => { state.wheelSource = v; reset(); })));
+  body.classList.toggle('is-slot', round === '*');
+  if (round === '*') { renderSlot(body); return; }
+  const slices = wheelSlices();
+  if (slices.length < 2) {
+    body.append(el('div', { class: 'tw-empty' }, el('span', { text: slices.length ? '칸이 두 개 이상 있어야 돌릴 수 있습니다.' : src === 'fav' ? '담은 학과가 없습니다.' : '추천할 대학이 없습니다.' })));
+    if (state.wheelOut && state.wheelOut.size) body.append(el('button', { class: 'tw-button is-ghost is-sm wheel-refill', type: 'button', text: '처음부터', onclick: reset }));
+    return;
+  }
+  const N = slices.length;
+  const step = 360 / N;
+  const NS = 'http://www.w3.org/2000/svg';
+  const S = (tag, attrs = {}, ...kids) => { const n = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v); n.append(...kids); return n; };
+  const pt = (deg, r) => [r * Math.sin(deg * Math.PI / 180), -r * Math.cos(deg * Math.PI / 180)];
+  // 칸 색: 빨강·크림·파랑·크림 반복, 홀수 칸이면 마지막은 금색(같은 색이 붙지 않게)
+  const PALETTE = ['#c8231a', '#f6ead0', '#1f4f9a', '#f6ead0'];
+  const colorOf = (i) => (N % 2 && i === N - 1 && N > 2 ? '#e5a823' : PALETTE[i % 4]);
+  const uid = 'cw' + Math.random().toString(36).slice(2, 7);
+  const ref = (id) => `url(#${uid}-${id})`;
+  const stop = (o, c, a = 1) => S('stop', { offset: o, 'stop-color': c, 'stop-opacity': a });
+  const defs = S('defs', {},
+    S('filter', { id: `${uid}-drop`, x: '-30%', y: '-30%', width: '160%', height: '170%' }, S('feDropShadow', { dx: 0, dy: 7, stdDeviation: 6, 'flood-color': '#1a1206', 'flood-opacity': 0.35 })),
+    S('filter', { id: `${uid}-soft`, x: '-40%', y: '-40%', width: '180%', height: '180%' }, S('feDropShadow', { dx: 0, dy: 2, stdDeviation: 1.6, 'flood-color': '#000', 'flood-opacity': 0.4 })),
+    S('filter', { id: `${uid}-glow`, x: '-150%', y: '-150%', width: '400%', height: '400%' }, S('feGaussianBlur', { stdDeviation: 2.4, result: 'b' }), S('feMerge', {}, S('feMergeNode', { in: 'b' }), S('feMergeNode', { in: 'SourceGraphic' }))),
+    S('linearGradient', { id: `${uid}-brass`, x1: 0, y1: 0, x2: 1, y2: 1 }, stop(0, '#fbe7a1'), stop(0.28, '#d6a53c'), stop(0.55, '#8f6516'), stop(0.78, '#e2b653'), stop(1, '#fae39a')),
+    S('linearGradient', { id: `${uid}-brassIn`, x1: 1, y1: 1, x2: 0, y2: 0 }, stop(0, '#fbe7a1'), stop(0.5, '#9c7120'), stop(1, '#5b3d08')),
+    S('radialGradient', { id: `${uid}-rimFace`, cx: 0.5, cy: 0.45, r: 0.6 }, stop(0.82, '#2a3558'), stop(1, '#10162c')),
+    S('radialGradient', { id: `${uid}-vignette`, cx: 0.5, cy: 0.5, r: 0.5 }, stop(0.55, '#000', 0), stop(0.9, '#000', 0.18), stop(1, '#000', 0.38)),
+    S('radialGradient', { id: `${uid}-center`, cx: 0.5, cy: 0.5, r: 0.5 }, stop(0, '#fff', 0.22), stop(0.35, '#fff', 0)),
+    S('linearGradient', { id: `${uid}-gloss`, x1: 0, y1: 0, x2: 0, y2: 1 }, stop(0, '#fff', 0.55), stop(0.55, '#fff', 0.08), stop(1, '#fff', 0)),
+    S('radialGradient', { id: `${uid}-bulbOn`, cx: 0.4, cy: 0.35, r: 0.65 }, stop(0, '#fffdf2'), stop(0.45, '#ffe07a'), stop(1, '#e09a00')),
+    S('radialGradient', { id: `${uid}-bulbOff`, cx: 0.4, cy: 0.35, r: 0.65 }, stop(0, '#f1e3b6'), stop(0.5, '#b89a4e'), stop(1, '#6d5418')),
+    S('radialGradient', { id: `${uid}-peg`, cx: 0.35, cy: 0.3, r: 0.7 }, stop(0, '#fffbe8'), stop(0.45, '#e2b653'), stop(1, '#6f4e0c')),
+    S('radialGradient', { id: `${uid}-chrome`, cx: 0.38, cy: 0.32, r: 0.75 }, stop(0, '#ffffff'), stop(0.35, '#dfe4ea'), stop(0.75, '#8a95a3'), stop(1, '#4b5563')),
+    S('linearGradient', { id: `${uid}-pointer`, x1: 0, y1: 0, x2: 1, y2: 0 }, stop(0, '#ff6a5c'), stop(0.5, '#d42a1d'), stop(1, '#8e150c')),
+    S('linearGradient', { id: `${uid}-wood`, x1: 0, y1: 0, x2: 1, y2: 0 }, stop(0, '#5e3417'), stop(0.2, '#9a6436'), stop(0.5, '#b57a45'), stop(0.8, '#8a5629'), stop(1, '#4f2b12')),
+    S('linearGradient', { id: `${uid}-woodTop`, x1: 0, y1: 0, x2: 0, y2: 1 }, stop(0, '#c48a52'), stop(1, '#7a4a22')),
+    S('radialGradient', { id: `${uid}-floor`, cx: 0.5, cy: 0.5, r: 0.5 }, stop(0, '#000', 0.28), stop(1, '#000', 0)));
+  const rot = S('g', { class: 'cw-rot' });
+  rot.style.transform = `rotate(${state.wheelRot || 0}deg)`;
+  slices.forEach(({ uni, u }, i) => {
+    const a0 = i * step; const a1 = a0 + step;
+    const [x0, y0] = pt(a0, 100); const [x1, y1] = pt(a1, 100);
+    const fill = colorOf(i);
+    const light = fill === '#f6ead0' || fill === '#e5a823';
+    const name = ((data().universities[uni] || {}).n) || shortUni(uni);
+    const text = state.wheelSource === 'fav' ? (name + ' ' + u.m).slice(0, 11) : name;
+    rot.append(S('g', { class: 'cw-slice' },
+      S('path', { d: `M0 0L${x0.toFixed(2)} ${y0.toFixed(2)}A100 100 0 ${step > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}Z`, fill }),
+      S('text', { class: light ? 'is-dark' : '', transform: `rotate(${(a0 + step / 2).toFixed(2)}) translate(0 -60) rotate(-90)`, 'text-anchor': 'middle', 'dominant-baseline': 'central' }, text)));
+  });
+  // 칸 경계의 금속선과 못
+  for (let i = 0; i < N; i++) {
+    const [x, y] = pt(i * step, 100);
+    rot.append(S('line', { class: 'cw-sep', x1: 0, y1: 0, x2: x.toFixed(2), y2: y.toFixed(2), stroke: ref('brassIn') }));
+    const [px, py] = pt(i * step, 95);
+    rot.append(S('circle', { cx: px.toFixed(2), cy: py.toFixed(2), r: 3.4, fill: ref('peg'), filter: ref('soft') }));
+  }
+  const bulbs = S('g', { class: 'cw-bulbs' });
+  for (let i = 0; i < 24; i++) {
+    const [x, y] = pt(i * 15 + 7.5, 111);
+    bulbs.append(S('circle', { class: 'cw-bulb' + (i % 2 ? ' is-odd' : ''), cx: x.toFixed(2), cy: y.toFixed(2), r: 3.8, style: `--on:${ref('bulbOn')};--off:${ref('bulbOff')}`, filter: ref('glow') }));
+  }
+  const star = 'M0 -9 L2.6 -2.9 L9 -2.8 L3.9 1.3 L5.6 7.7 L0 4.1 L-5.6 7.7 L-3.9 1.3 L-9 -2.8 L-2.6 -2.9Z';
+  const pin = S('g', { class: 'cw-pin', filter: ref('drop') },
+    S('path', { d: 'M0 -100 C-10 -114 -13 -124 0 -134 C13 -124 10 -114 0 -100Z', fill: ref('pointer'), stroke: '#fff4e0', 'stroke-width': 1.6 }),
+    S('circle', { cx: 0, cy: -123, r: 4.2, fill: ref('chrome') }));
+  const svg = S('svg', { viewBox: '-140 -146 280 318', class: 'circus-wheel', role: 'img', 'aria-label': '돌림판' }, defs,
+    S('ellipse', { cx: 0, cy: 160, rx: 96, ry: 9, fill: ref('floor') }),
+    S('path', { d: 'M-22 92 L22 92 L54 150 L-54 150Z', fill: ref('wood') }),
+    S('rect', { x: -74, y: 146, width: 148, height: 12, rx: 3, fill: ref('woodTop') }),
+    S('g', { filter: ref('drop') },
+      S('circle', { r: 124, fill: ref('brass') }),
+      S('circle', { r: 118, fill: ref('rimFace') }),
+      S('circle', { r: 103, fill: ref('brassIn') })),
+    bulbs, rot,
+    S('circle', { class: 'cw-overlay', r: 100, fill: ref('vignette') }),
+    S('circle', { class: 'cw-overlay', r: 100, fill: ref('center') }),
+    S('path', { class: 'cw-overlay', d: 'M-96 -24 A100 100 0 0 1 96 -24 C60 -8 -60 -8 -96 -24Z', fill: ref('gloss') }),
+    S('circle', { r: 21, fill: ref('brass'), filter: ref('soft') }),
+    S('circle', { r: 16.5, fill: ref('chrome') }),
+    S('path', { d: star, class: 'cw-star' }),
+    pin);
+  const spin = el('button', { class: 'tw-button is-primary wheel-spin', type: 'button', text: '돌리기' });
+  const result = el('div', { class: 'wheel-result' });
+  const showPick = (k) => {
+    const { uni, u } = slices[k];
+    const t = tierOf(gaugeOf(u), u);
+    const card = el('div', { class: 'wheel-card', role: 'button', tabindex: 0 }, mono(uni), el('span', { class: 'wc-name' }, el('small', { text: shortUni(uni) }), el('strong', { text: u.m })), el('span', { class: 'tier-chip', 'data-tier': t.key, text: t.label }), favButton(u));
+    card.addEventListener('click', () => { hideSheets(); setTimeout(() => openDetail(u), 200); });
+    const drop = el('button', { class: 'tw-button is-ghost is-sm', type: 'button', text: '이 칸 빼고 다시', onclick: () => { state.wheelOut.add(unitKey(u)); state.wheelPick = null; renderWheel(); } });
+    result.replaceChildren(el('span', { class: 'cw-badge', text: '당첨' }), card, drop);
+    rot.querySelectorAll('.cw-slice').forEach((g, j) => g.classList.toggle('is-picked', j === k));
+  };
+  spin.addEventListener('click', () => {
+    if (state.wheelBusy) return;
+    const k = Math.floor(Math.random() * N);
+    const jitter = (Math.random() - 0.5) * step * 0.6;
+    const cur = state.wheelRot || 0;
+    const want = -((k + 0.5) * step + jitter);
+    const target = cur + 360 * 6 + ((((want - cur) % 360) + 360) % 360);
+    state.wheelRot = target;
+    result.replaceChildren();
+    rot.querySelectorAll('.cw-slice').forEach((g) => g.classList.remove('is-picked'));
+    if (reduceMotion()) { rot.style.transform = `rotate(${target}deg)`; showPick(k); return; }
+    state.wheelBusy = true;
+    spin.disabled = true;
+    body.classList.add('is-spinning');
+    rot.style.transition = 'transform 4800ms cubic-bezier(0.1, 0.7, 0.08, 1)';
+    requestAnimationFrame(() => { rot.style.transform = `rotate(${target}deg)`; });
+    let last = null;
+    const watch = () => {
+      if (!state.wheelBusy) return;
+      const m = new DOMMatrix(getComputedStyle(rot).transform);
+      const ang = ((Math.atan2(m.b, m.a) * 180 / Math.PI) + 360) % 360;
+      const under = Math.floor(((360 - ang) % 360) / step);
+      if (last !== null && under !== last) { pin.classList.remove('is-tick'); void pin.getBoundingClientRect(); pin.classList.add('is-tick'); }
+      last = under;
+      requestAnimationFrame(watch);
+    };
+    requestAnimationFrame(watch);
+    const done = () => {
+      rot.removeEventListener('transitionend', done);
+      state.wheelBusy = false;
+      spin.disabled = false;
+      body.classList.remove('is-spinning');
+      rot.style.transition = '';
+      showPick(k);
+      fireworks(stage, 3);
+    };
+    rot.addEventListener('transitionend', done);
+  });
+  const stage = el('div', { class: 'wheel-stage' }, svg, spin);
+  body.append(stage, result);
+}
+/* 폭죽: 돌림판·슬롯머신이 멈추면 무대 위에서 터진다. 모션 줄이기에서는 쓰지 않는다. */
+function fireworks(host, shells = 4) {
+  if (reduceMotion() || !host.isConnected) return;
+  host.querySelector(':scope > .fx-canvas')?.remove();
+  const cv = el('canvas', { class: 'fx-canvas', 'aria-hidden': 'true' });
+  host.append(cv);
+  const box = cv.getBoundingClientRect();
+  const W = box.width; const H = box.height;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const COLORS = ['#d42a1d', '#e5a823', '#1f4f9a', '#ff6a5c', '#f6c945', '#3f7de0'];
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const rockets = Array.from({ length: shells }, (_, i) => {
+    const x = W * (shells === 1 ? 0.5 : 0.12 + 0.76 * [0, 2, 1, 3][i % 4] / (shells - 1)) + rnd(-14, 14);
+    return { x0: x + rnd(-30, 30), x, y: H * rnd(0.08, 0.3), t0: i * 190 + rnd(0, 50), dur: rnd(360, 460), color: COLORS[(i * 2) % COLORS.length], burst: false, flash: 0 };
+  });
+  const parts = [];
+  const burst = (r) => {
+    r.burst = true; r.flash = performance.now();
+    const alt = COLORS[(COLORS.indexOf(r.color) + 1) % COLORS.length];
+    for (let i = 0; i < 90; i++) {
+      const a = (i / 90) * Math.PI * 2 + rnd(-0.05, 0.05); const v = i % 2 ? rnd(3.2, 4.8) : rnd(1.6, 3.4);
+      parts.push({ kind: 'spark', x: r.x, y: r.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: rnd(850, 1250), age: 0, color: i % 3 ? r.color : alt });
+    }
+    for (let i = 0; i < 24; i++) {
+      const a = rnd(0, Math.PI * 2); const v = rnd(0.8, 2.2);
+      parts.push({ kind: 'paper', x: r.x, y: r.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 1, life: rnd(1500, 1900), age: 0, color: COLORS[i % COLORS.length], rot: rnd(0, 6), vr: rnd(-0.2, 0.2), w: rnd(4, 7), h: rnd(2.5, 4) });
+    }
+  };
+  const start = performance.now();
+  let prev = start;
+  const frame = (now) => {
+    if (!cv.isConnected) return;
+    const k = Math.min(3, (now - prev) / 16.67); prev = now;
+    const t = now - start;
+    ctx.clearRect(0, 0, W, H);
+    ctx.lineCap = 'round';
+    for (const r of rockets) {
+      const p = (t - r.t0) / r.dur;
+      if (p < 0 || r.burst) continue;
+      if (p >= 1) { burst(r); continue; }
+      const e = 1 - Math.pow(1 - p, 2);
+      const x = r.x0 + (r.x - r.x0) * e; const y = H + (r.y - H) * e;
+      const g = ctx.createLinearGradient(x, y, x, y + 26);
+      g.addColorStop(0, r.color); g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.strokeStyle = g; ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - (r.x - r.x0) * 0.04, y + 26); ctx.stroke();
+    }
+    for (const r of rockets) {
+      const f = r.flash ? (now - r.flash) / 220 : 1;
+      if (f >= 1) continue;
+      const g = ctx.createRadialGradient(r.x, r.y, 0, r.x, r.y, 34);
+      g.addColorStop(0, `rgba(255,250,225,${(1 - f) * 0.95})`); g.addColorStop(1, 'rgba(255,230,160,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(r.x, r.y, 34, 0, Math.PI * 2); ctx.fill();
+    }
+    for (const q of parts) {
+      q.age += 16.67 * k;
+      if (q.age > q.life) continue;
+      const px = q.x; const py = q.y;
+      if (q.kind === 'spark') { q.vx *= Math.pow(0.975, k); q.vy = q.vy * Math.pow(0.975, k) + 0.045 * k; }
+      else { q.vx *= Math.pow(0.96, k); q.vy = Math.min(1.4, q.vy + 0.05 * k); q.rot += q.vr * k; }
+      q.x += q.vx * k; q.y += q.vy * k;
+      const a = 1 - q.age / q.life;
+      ctx.globalAlpha = q.kind === 'spark' && a < 0.3 && Math.random() < 0.4 ? a * 0.3 : Math.min(1, a * 1.4);
+      if (q.kind === 'spark') {
+        ctx.strokeStyle = q.color; ctx.lineWidth = 2.6;
+        ctx.beginPath(); ctx.moveTo(px - q.vx * 2.4, py - q.vy * 2.4); ctx.lineTo(q.x, q.y); ctx.stroke();
+        ctx.fillStyle = '#fff8e0'; ctx.fillRect(q.x - 0.8, q.y - 0.8, 1.6, 1.6);
+      } else {
+        ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.rot); ctx.scale(1, Math.cos(q.age / 90));
+        ctx.fillStyle = q.color; ctx.fillRect(-q.w / 2, -q.h / 2, q.w, q.h); ctx.restore();
+      }
+    }
+    ctx.globalAlpha = 1;
+    const alive = rockets.some((r) => !r.burst) || parts.some((q) => q.age <= q.life);
+    if (alive) requestAnimationFrame(frame); else cv.remove();
+  };
+  requestAnimationFrame(frame);
+}
+
+/* 슬롯머신: 가·나·다군 릴 세 개를 한 번에 돌린다. 릴마다 '고정'하면 다음 판에 그대로 둔다. */
+function renderSlot(body) {
+  const src = state.wheelSource || 'line';
+  const rounds = ['가', '나', '다'];
+  const pools = rounds.map((r) => wheelSlices(r, false));
+  state.slotHold = state.slotHold || {};
+  state.slotPick = state.slotPick || {};
+  if (pools.every((p) => !p.length)) {
+    body.append(el('div', { class: 'tw-empty' }, el('span', { text: src === 'fav' ? '담은 학과가 없습니다.' : '추천할 대학이 없습니다.' })));
+    return;
+  }
+  const CELL = 60;
+  const bulbs = (n) => el('div', { class: 'sl-bulbs' }, ...Array.from({ length: n }, (_, i) => el('i', { class: 'sl-bulb' + (i % 2 ? ' is-odd' : '') })));
+  const reels = rounds.map((round, ri) => {
+    const items = pools[ri];
+    const strip = el('div', { class: 'reel-strip' });
+    const win = el('div', { class: 'reel-window' + (items.length ? '' : ' is-empty') }, strip, el('i', { class: 'reel-shade' }));
+    const hold = el('button', { class: 'reel-hold', type: 'button', text: '고정', 'aria-pressed': state.slotHold[round] ? 'true' : 'false', disabled: items.length && state.slotPick[round] != null ? null : true, 'data-fk': 'hold:' + round });
+    hold.addEventListener('click', () => { state.slotHold[round] = !state.slotHold[round]; hold.setAttribute('aria-pressed', state.slotHold[round] ? 'true' : 'false'); });
+    const col = el('div', { class: 'reel' }, el('span', { class: 'reel-plate', text: round + '군' }), win, hold);
+    const cell = (x) => el('div', { class: 'reel-cell' }, mono(x.uni), el('span', { text: x.u.m }));
+    const reel = { round, items, strip, win, hold, col, pos: 0 };
+    // pos번째 칸이 창 가운데. 창 높이 = 2칸.
+    reel.place = (pos) => { reel.pos = pos; strip.style.transform = `translateY(${(CELL / 2 - pos * CELL).toFixed(1)}px)`; };
+    reel.build = (copies) => { strip.replaceChildren(...Array.from({ length: copies }, () => items.map(cell)).flat()); };
+    if (!items.length) strip.append(el('div', { class: 'reel-cell is-none' }, el('span', { text: '없음' })));
+    else {
+      const k0 = Math.min(state.slotPick[round] ?? 0, items.length - 1);
+      reel.build(3); reel.place(k0 + items.length);
+    }
+    return reel;
+  });
+  const lever = el('button', { class: 'sl-lever', type: 'button', 'aria-label': '레버 당기기', 'data-fk': 'lever' }, el('i', { class: 'sl-arm' }, el('b', { class: 'sl-knob' })), el('i', { class: 'sl-hub' }));
+  const machine = el('div', { class: 'slot' },
+    el('div', { class: 'sl-top' }, bulbs(13), el('span', { class: 'sl-star' })),
+    el('div', { class: 'sl-face' }, el('i', { class: 'sl-line is-l' }), el('div', { class: 'sl-reels' }, ...reels.map((r) => r.col)), el('i', { class: 'sl-line is-r' })),
+    el('div', { class: 'sl-tray' }), lever);
+  const spin = el('button', { class: 'tw-button is-primary wheel-spin', type: 'button', text: '돌리기' });
+  const result = el('div', { class: 'slot-results' });
+  const showResults = () => {
+    result.replaceChildren(...reels.map((r) => {
+      const k = state.slotPick[r.round];
+      if (!r.items.length || k == null) return el('div', { class: 'slot-row is-none' }, el('span', { class: 'sr-round', text: r.round + '군' }), el('span', { class: 'sr-none', text: '없음' }));
+      const { uni, u } = r.items[k];
+      const t = tierOf(gaugeOf(u), u);
+      const row = el('div', { class: 'slot-row', role: 'button', tabindex: 0 }, el('span', { class: 'sr-round', text: r.round + '군' }), mono(uni), el('span', { class: 'wc-name' }, el('small', { text: shortUni(uni) }), el('strong', { text: u.m })), el('span', { class: 'tier-chip', 'data-tier': t.key, text: t.label }), favButton(u));
+      row.addEventListener('click', () => { hideSheets(); setTimeout(() => openDetail(u), 200); });
+      row.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') row.click(); });
+      return row;
+    }));
+    reels.forEach((r) => { r.hold.disabled = !(r.items.length && state.slotPick[r.round] != null); r.win.classList.toggle('is-won', state.slotPick[r.round] != null); });
+  };
+  if (Object.keys(state.slotPick).length) showResults();
+  const go = () => {
+    if (state.wheelBusy) return;
+    const live = reels.filter((r) => r.items.length && !(state.slotHold[r.round] && state.slotPick[r.round] != null));
+    if (!live.length) return;
+    for (const r of live) state.slotPick[r.round] = Math.floor(Math.random() * r.items.length);
+    if (reduceMotion()) { for (const r of live) { r.build(3); r.place(state.slotPick[r.round] + r.items.length); } showResults(); return; }
+    state.wheelBusy = true;
+    spin.disabled = true;
+    body.classList.add('is-spinning');
+    lever.classList.remove('is-pulled'); void lever.offsetWidth; lever.classList.add('is-pulled');
+    result.classList.add('is-waiting');
+    let left = live.length;
+    live.forEach((r, i) => {
+      const n = r.items.length; const k = state.slotPick[r.round];
+      // 위에서 아래로 흐르게: 큰 번호 칸에서 작은 번호 칸으로 간다.
+      const travel = 22 + i * 9;
+      const copies = Math.ceil((travel + n * 2) / n) + 2;
+      const cur = r.pos % n;
+      r.build(copies + 1);
+      const from = cur + n * (copies - 1);
+      const to = k + n * Math.floor((from - travel - k) / n);
+      r.place(from);
+      r.win.classList.remove('is-won');
+      r.win.classList.add('is-fast');
+      const y = (p) => `translateY(${(CELL / 2 - p * CELL).toFixed(1)}px)`;
+      const dur = 1500 + i * 520;
+      const anim = r.strip.animate([
+        { transform: y(from), easing: 'cubic-bezier(0.3, 0.15, 0.3, 1)' },
+        { transform: `translateY(${(CELL / 2 - to * CELL + 12).toFixed(1)}px)`, offset: 0.9, easing: 'ease-in-out' },
+        { transform: y(to) },
+      ], { duration: dur, fill: 'forwards' });
+      setTimeout(() => r.win.classList.remove('is-fast'), dur * 0.6);
+      anim.onfinish = () => {
+        anim.cancel(); r.build(3); r.place(k + n);
+        r.win.classList.add('is-won', 'is-stop');
+        setTimeout(() => r.win.classList.remove('is-stop'), 220);
+        if (--left) return;
+        state.wheelBusy = false; spin.disabled = false;
+        body.classList.remove('is-spinning');
+        result.classList.remove('is-waiting');
+        showResults();
+        fireworks(stage, 3);
+      };
+    });
+  };
+  spin.addEventListener('click', go);
+  lever.addEventListener('click', go);
+  const stage = el('div', { class: 'wheel-stage slot-stage' }, machine, spin);
+  body.append(stage, result);
 }
 
 /* ───────── Find ───────── */
 
 function renderFindCategory() {
-  const all = ['', ...CATEGORIES];
+  const fields = liveFields();
+  if (state.findCat && !fields.includes(state.findCat)) state.findCat = '';
+  const all = ['', ...fields];
   $('find-category').replaceChildren(...all.map((c) => el('button', {
     class: 'tw-chip' + (c === state.findCat ? ' is-active' : ''), type: 'button', text: c || '전체',
-    onclick: () => { state.findCat = c; state.open.clear(); persist(); renderFindCategory(); renderFind(); },
+    onclick: () => { state.findCat = c; state.open.clear(); persist(); renderFindCategory(); renderFind(); swapIn('find-list'); },
   })));
   for (const b of $('find-round').children) b.classList.toggle('is-active', b.dataset.round === state.findRound);
 }
@@ -730,7 +995,7 @@ function renderFind() {
   const cat = state.findCat;
   const q = state.query.replace(/\s/g, '');
   const g = displayGroup();
-  const units = d.units.filter((u) => (cat ? u.c === cat : u.c !== '예체능') && visible(u, q ? 'search' : cat) && (!state.findRound || u.r === state.findRound) && matchQuery(u, q));
+  const units = d.units.filter((u) => (cat ? fieldOf(u) === cat : u.c !== '예체능') && visible(u, q ? 'search' : cat) && (!state.findRound || u.r === state.findRound) && matchQuery(u, q));
   const entries = new Map();
   for (const u of units) {
     const faculty = u.c === '의치한약수' ? u.t : u.c === '초등교육' ? '교' : null;
@@ -751,6 +1016,11 @@ function renderFind() {
     const idx = f.faculty === '교' ? ordered.findIndex((e) => !e.faculty && fin(e.rep) && fin(f.rep) && e.rep > f.rep) : ordered.findIndex((e) => !e.faculty);
     ordered.splice(idx < 0 ? ordered.length : idx, 0, f);
   }
+  if (q) {
+    const uniHit = (e) => !e.faculty && (ALIAS[q] === e.uni || e.uni.replace(/\s/g, '').includes(q) || ((d.universities[e.uni] || {}).n || '').replace(/\s/g, '').includes(q));
+    const hits = ordered.filter(uniHit);
+    if (hits.length) { ordered.splice(0, ordered.length, ...hits, ...ordered.filter((e) => !hits.includes(e))); if (hits.length === 1) hits[0].hit = true; }
+  }
   const box = $('find-list');
   box.replaceChildren();
   if (!ordered.length) { box.append(el('div', { class: 'tw-empty', text: '검색 결과가 없습니다.' })); return; }
@@ -759,7 +1029,7 @@ function renderFind() {
   let shown = 0;
   for (const e of ordered) {
     if (!dividerDone && fin(e.rep) && e.rep > mine) { box.append(el('div', { class: 'me-line' }, el('span', { text: '나' }))); dividerDone = true; }
-    const auto = q && e.units.some((u) => u.m.replace(/\s/g, '').includes(q) || (MAJOR_ALIAS[q] && u.m.includes(MAJOR_ALIAS[q])));
+    const auto = e.hit || q && e.units.some((u) => u.m.replace(/\s/g, '').includes(q) || (MAJOR_ALIAS[q] && u.m.includes(MAJOR_ALIAS[q])));
     box.append(lineGroup(e, auto && shown < 6));
     if (auto) shown++;
   }
@@ -773,14 +1043,25 @@ function lineGroup(e, autoOpen, opts = {}) {
   for (const u of e.units) { const g = gaugeOf(u); if (g >= 80) counts.safe++; else if (g >= 50) counts.fit++; else if (g >= 20) counts.reach++; }
   const dots = el('span', { class: 'line-dots' });
   for (const [k, label] of [['safe', '안정'], ['fit', '적정'], ['reach', '소신']]) if (counts[k]) dots.append(el('span', { 'data-tier': k, title: label, text: counts[k] }));
+  const rg = displayGroup();
+  const ok = e.units.filter((u) => gaugeOf(u) >= 50);
+  const pool = ok.length ? ok : e.units;
+  const best = [...pool].sort((a, b) => (expPct(a, rg) ?? 99) - (expPct(b, rg) ?? 99))[0];
+  const lead = best ? best.m + (e.units.length > 1 ? ' 외 ' + (e.units.length - 1) : '') : '';
+  const bt = best ? tierOf(gaugeOf(best), best) : null;
+  const badge = opts.hideRound && bt ? el('span', { class: 'tier-chip', 'data-tier': bt.key, text: bt.label }) : dots;
   const row = el('button', { class: 'line-row', type: 'button', 'aria-expanded': open ? 'true' : 'false' },
     e.faculty ? mono(null, e.faculty) : mono(e.uni),
-    el('span', { class: 'line-name' }, el('strong', { text: e.name }), el('small', {}, [e.tag, opts.challenge ? '도전' : '', (opts.hideRound ? '학과 ' : '모집단위 ') + e.units.length + '개'].filter(Boolean).join('  '))),
-    dots, el('span', { class: 'line-chevron' }));
+    el('span', { class: 'line-name' }, el('strong', { text: e.name }), el('small', {}, [e.tag, opts.table ? '학과 ' + e.units.length + '개' : opts.hideRound ? lead : e.units.length + '개'].filter(Boolean).join('  '))),
+    badge, el('span', { class: 'line-chevron' }));
   wrap.append(row);
   void rerender;
   collapsible(wrap, row, e.key, () => {
-    const units = opts.hideRound ? e.units : [...e.units].sort((a, b) => (gaugeOf(b) ?? -1) - (gaugeOf(a) ?? -1));
+    // 추천: 칩에 쓴 대표 학과가 맨 위에 오도록 적정 → 안정 → 소신 순, 같은 판정 안에서는 합격선이 높은 학과부터.
+    const bucket = (u) => { const k = tierOf(gaugeOf(u)).key; return k === 'fit' ? 0 : k === 'safe' ? 1 : k === 'reach' ? 2 : 3; };
+    const units = opts.hideRound
+      ? [...e.units].sort((a, b) => (a === best ? -1 : b === best ? 1 : 0) || bucket(a) - bucket(b) || (expPct(a, rg) ?? 99) - (expPct(b, rg) ?? 99))
+      : [...e.units].sort((a, b) => (gaugeOf(b) ?? -1) - (gaugeOf(a) ?? -1));
     return unitList(units, (u) => unitRow(u, { name: e.faculty ? [shortUni(u.u), ...variantOf(u.m)].join(' ') : u.m, round: !opts.hideRound }));
   }, open);
   return wrap;
@@ -801,39 +1082,29 @@ function variantOf(m) {
 function renderList() {
   const d = data();
   const favs = [...state.favorites].map((k) => d.byKey.get(k)).filter(Boolean);
-  const summary = $('list-summary');
   const rounds = $('list-rounds');
-  summary.replaceChildren();
   rounds.replaceChildren();
   if (!favs.length) {
-    summary.hidden = true;
-    rounds.append(el('div', { class: 'tw-empty', style: 'grid-column:1/-1' }, el('span', { text: '담은 학과가 없습니다.' })));
+    rounds.append(el('div', { class: 'tw-empty list-empty', style: 'grid-column:1/-1' }, el('span', { class: 'list-empty-icon', html: HEART }), el('span', { text: '담은 학과가 없습니다.' })));
     return;
   }
-  summary.hidden = false;
-  const chosen = [];
-  for (const round of ['가', '나', '다']) {
+  const slotOf = (round) => {
     const key = state.slots[round];
-    const u = key && d.byKey.get(key);
-    const slot = el('div', { class: 'combo-slot' }, el('small', { text: round + '군' }));
-    if (u && state.favorites.has(key)) { chosen.push(u); slot.append(el('strong', { text: shortUni(u.u) + ' ' + u.m }), fitLine(gaugeOf(u), u)); }
-    else { const n = favs.filter((f) => f.r === round).length; slot.append(el('span', { class: 'empty', text: n ? '담은 학과 ' + n + '개' : '—' })); }
-    summary.append(slot);
-  }
-  const probs = chosen.map((u) => gaugeOf(u)).filter(fin);
-  const any = probs.length ? 100 * (1 - probs.reduce((acc, p) => acc * (1 - p / 100), 1)) : null;
-  summary.append(el('div', { class: 'combo-total' }, el('small', { text: '한 곳 이상 합격' }), probs.length ? fitLine(Math.min(95, any)) : el('span', { class: 'empty', text: '—' })));
+    if (key && state.favorites.has(key)) return key;
+    const top = favs.filter((f) => f.r === round).sort((a, b) => (gaugeOf(b) ?? -1) - (gaugeOf(a) ?? -1))[0];
+    return top ? unitKey(top) : null;
+  };
   for (const round of ['가', '나', '다']) {
     const col = el('div', { class: 'round' }, el('div', { class: 'round-head' }, el('h3', { text: round + '군' })));
     const items = favs.filter((u) => u.r === round).sort((a, b) => (gaugeOf(b) ?? -1) - (gaugeOf(a) ?? -1));
-    if (!items.length) col.append(el('div', { class: 'round-empty', text: '담은 학과가 없습니다.' }));
+    if (!items.length) col.append(el('div', { class: 'round-empty is-compact', text: '없음' }));
     for (const u of items) {
-      const isSlot = state.slots[round] === unitKey(u);
+      const isSlot = slotOf(round) === unitKey(u);
       const card = pickCard(u, { slot: isSlot });
       const check = el('input', { type: 'checkbox', class: 'tw-check', checked: isSlot ? true : null, 'aria-label': '지원' });
       const pickBtn = el('label', { class: 'slot-toggle' }, check, '지원');
       pickBtn.addEventListener('click', (ev) => ev.stopPropagation());
-      check.addEventListener('change', () => { if (isSlot) delete state.slots[round]; else state.slots[round] = unitKey(u); persist(); renderList(); });
+      check.addEventListener('change', () => { if (!isSlot) state.slots[round] = unitKey(u); else check.checked = true; persist(); renderList(); });
       card.append(pickBtn);
       col.append(card);
     }
@@ -855,6 +1126,7 @@ async function openDetail(u) {
   fav.setAttribute('aria-pressed', state.favorites.has(unitKey(u)) ? 'true' : 'false');
   fav.onclick = () => { toggleFav(u); fav.setAttribute('aria-pressed', state.favorites.has(unitKey(u)) ? 'true' : 'false'); };
   showSheet('sheet-detail');
+  $('detail-body').scrollTop = 0;
   renderDetail();
   try {
     const bd = await breakdown(state.record, u.k);
@@ -867,58 +1139,84 @@ async function breakdown(record, scheme) {
   try { return await state.breakdowns.get(key); } catch (err) { state.breakdowns.delete(key); throw err; }
 }
 
+const isTweaked = (det) => Object.keys(det.tweak).some((s) => det.tweak[s] !== state.record[s]);
 function renderDetail() {
-  const { unit: u, bd } = state.detail;
+  const det = state.detail;
+  const { unit: u } = det;
   const d = data();
   const g = displayGroup();
   const row = state.rows.get(u.i);
   const gi = gaugeOf(u);
-  const t = tierOf(gi, u);
   const body = $('detail-body');
-  body.replaceChildren();
+  // 점수 조정 중에도 스크롤 위치와 누른 버튼의 초점을 유지한다.
+  const scrollTop = body.scrollTop;
+  const focusKey = body.contains(document.activeElement) ? document.activeElement.dataset.fk : null;
+  const tweaked = isTweaked(det);
+  const pending = tweaked && !det.tweakResult;
+  const bd = tweaked && det.tweakResult ? det.tweakResult : det.bd;
+  const my = tweaked ? (det.tweakResult ? det.tweakResult.total : det.shownScore ?? null) : row ? row.score : null;
+  det.shownScore = my;
+  const shown = tweaked ? (det.tweakResult ? lineIndex(det.tweakResult.total, u.th) : det.shownGauge ?? gi) : gi;
+  det.shownGauge = shown;
+  const t = tierOf(shown, u);
 
-  // 요약 게이지
-  const tags = el('div', { class: 'tags' }, el('span', { class: 'tw-badge', text: u.r + '군' }), el('span', { class: 'tw-badge', text: u.c }));
-  if (u.rg) tags.append(el('span', { class: 'tw-badge', text: '지역인재' }));
-  if (row && row.eligibility.state === 'unchecked') tags.append(el('span', { class: 'tw-badge is-outline', text: '지원 자격 확인' }));
-  const scale = el('div', { class: 'gauge-scale' }, ...[['소신', 20], ['예상', 50], ['적정', 80]].map(([l, x]) => el('span', { style: `left:${x}%`, text: l })));
-  body.append(el('div', { class: 'meter' },
-    el('div', { class: 'meter-top' }, el('span', { class: 'tier', 'data-tier': t.key, text: t.label }), tags),
-    el('div', {}, gauge(gi, { large: true }), scale)));
-  if (u.cut_note) body.append(el('p', { class: 'cut-note', text: u.cut_note }));
+  // 요약 게이지: 같은 노드를 유지해 표식이 이전 위치에서 새 위치로 움직인다.
+  let meter = det.meterEl;
+  if (!meter) {
+    const tags = el('div', { class: 'tags' }, el('span', { class: 'tw-badge', text: u.r + '군' }), el('span', { class: 'tw-badge', text: fieldOf(u) }));
+    if (u.rg) tags.append(el('span', { class: 'tw-badge', text: '지역인재' }));
+    if (row && row.eligibility.state === 'unchecked') tags.append(el('span', { class: 'tw-badge is-outline', text: '지원 자격 확인' }));
+    const scale = el('div', { class: 'gauge-scale' }, ...[['소신', 20], ['적정', 50], ['안정', 80]].map(([l, x]) => el('span', { style: `left:${x}%`, text: l })));
+    meter = el('div', { class: 'meter' },
+      el('div', { class: 'meter-top' }, el('span', { class: 'tier' }), tags),
+      el('div', {}, gauge(gi, { large: true }), scale));
+    det.meterEl = meter;
+  }
+  const tierNode = meter.querySelector('.tier');
+  tierNode.dataset.tier = t.key; tierNode.textContent = t.label;
+  const track = meter.querySelector('.gauge');
+  track.setAttribute('aria-label', t.label);
+  let ghost = track.querySelector('b.is-ghost');
+  if (tweaked && fin(gi)) { if (!ghost) { ghost = el('b', { class: 'is-ghost' }); track.prepend(ghost); } ghost.style.left = gi + '%'; } else if (ghost) ghost.remove();
+  let dot = track.querySelector('b:not(.is-ghost)');
+  if (fin(shown)) { if (!dot) { dot = el('b'); track.append(dot); } dot.dataset.tier = tierOf(shown).key; dot.style.left = shown + '%'; } else if (dot) dot.remove();
+  meter.classList.toggle('is-pending', pending);
+  if (!det.topEl) { det.topEl = el('div', { class: 'detail-part' }); det.tweakEl = buildTweak(); det.bottomEl = el('div', { class: 'detail-part' }); }
+  if (det.topEl.parentNode !== body) body.replaceChildren(meter, det.topEl, det.tweakEl, det.bottomEl);
+  const top = det.topEl; top.replaceChildren();
+  const bottom = det.bottomEl; bottom.replaceChildren();
+  const link = u.cut_note && u.cut_note.match(/대학어디가 ‘(.+)’\((.)군\)/);
+  if (link) top.append(el('p', { class: 'cut-link' }, el('span', { class: 'tw-badge is-outline', text: '이전 학과' }), el('span', { text: link[1] + (link[2] !== u.r ? ' · ' + link[2] + '군' : '') })));
 
-  // 핵심 숫자
-  const my = row ? row.score : null;
-  const exp = u.th[1];
-  const mp = myPct(u, g); const ep = expPct(u, g);
-  const diff = fin(my) && fin(exp) ? my - exp : null;
-  const stat = (label, value, extra) => el('div', { class: 'stat' }, el('small', { text: label }), el('b', {}, value, extra || ''));
-  const diffSpan = el('em', { class: '' }, el('span', { class: diff >= 0 ? 'up' : 'down', text: signed(diff, 2) }));
-  body.append(el('div', { class: 'stats' },
-    stat('내 점수', fmt(my, 2), diffSpan),
-    stat('합격선', fin(exp) ? fmt(exp, 2) : '—'),
-    stat(`내 ${GNAME[g]} 누백`, fmtPct(mp), el('em', { text: fin(mp) ? fmtRank(mp / 100 * pop(g)) : '' })),
-    stat(`합격선 ${GNAME[g]} 누백`, fmtPct(ep), el('em', { text: fin(ep) ? fmtRank(ep / 100 * pop(g)) : '' }))));
+  // 합격선 사다리: 안정·적정·소신 기준선 사이에 내 점수를 끼워 판정 이유를 보여준다.
+  const mp = myPct(u, g);
+  const ladder = [['안정', 0], ['적정', 1], ['소신', 2]].map(([label, i]) => ({ label, score: u.th[i], pct: u.tp[g] ? u.tp[g][i] : null, cls: i === 1 ? 'is-cut' : '' }));
+  const me = { label: '나', score: my, pct: tweaked ? null : mp, cls: 'is-me' + (pending ? ' is-pending' : '') };
+  const at = fin(me.score) ? ladder.findIndex((r) => fin(r.score) && me.score >= r.score) : -1;
+  ladder.splice(at < 0 ? ladder.length : at, 0, me);
+  const yr = d.quota_years.current;
+  top.append(el('section', { class: 'sec' }, el('div', { class: 'sec-head' }, el('h3', { text: '합격선' }), el('span', { text: `${yr}학년도 ${edName()}` })),
+    el('table', { class: 'mini-table ladder' },
+      el('thead', {}, el('tr', {}, el('th', { text: '' }), el('th', { text: '점수' }), el('th', { text: GNAME[g] + ' 누백' }), el('th', { text: '등수' }))),
+      el('tbody', {}, ...ladder.map((r) => el('tr', { class: r.cls },
+        el('td', { text: r.label }), el('td', { ...(r === me ? numAttrs('me', r.score, 2) : {}), text: fmt(r.score, 2) }), el('td', { text: fmtPct(r.pct) }), el('td', { text: fin(r.pct) ? fmtRank(r.pct / 100 * pop(g)) : '—' })))))));
+
+  // 점수 조정: 슬라이더 노드는 유지하고 값만 맞춘다.
+  syncTweak();
 
   // 점수 계산
-  const calc = el('section', { class: 'sec' }, el('div', { class: 'sec-head' }, el('h3', { text: '점수 계산' }), el('span', { text: schemeLabel(u.k).full || (bd ? ruleText(bd.rules) : '') })));
-  calc.append(bd ? calcView(bd) : el('div', { class: 'round-empty', text: '계산하고 있습니다.' }));
-  body.append(calc);
-
-  // 점수 바꿔보기
-  body.append(tweakView());
-
-  // 기준선
-  const yr = d.quota_years.current;
-  const lines = el('table', { class: 'mini-table' },
-    el('thead', {}, el('tr', {}, el('th', { text: '' }), el('th', { text: '점수' }), el('th', { text: GNAME[g] + ' 누백' }), el('th', { text: '등수' }))),
-    el('tbody', {}, ...[['적정', 0], ['예상', 1], ['소신', 2]].map(([label, i]) => {
-      const p = u.tp[g] ? u.tp[g][i] : null;
-      return el('tr', { class: i === 1 ? 'is-now' : '' }, el('td', { text: label }), el('td', { text: fmt(u.th[i], 2) }), el('td', { text: fmtPct(p) }), el('td', { text: fin(p) ? fmtRank(p / 100 * pop(g)) : '—' }));
-    })));
-  body.append(el('section', { class: 'sec' }, el('div', { class: 'sec-head' }, el('h3', { text: '합격선' }), el('span', { text: `${yr}학년도 ${edName()}` })), lines));
+  const label = schemeLabel(u.k).full || (bd ? ruleText(bd.rules) : '');
+  const parts = label.split(' · ').filter(Boolean);
+  const calc = el('section', { class: 'sec' }, el('div', { class: 'sec-head calc-head' }, el('h3', { text: '점수 계산' }), el('span', { class: 'calc-name', text: schemeName(u.k, u.u) + ' 반영식' })));
+  const conds = parts.slice(1);
+  if (!parseRatio(parts[0] || '') && parts[0]) conds.unshift(humanRule(parts[0]));
+  if (conds.length) calc.append(el('div', { class: 'calc-meta' }, ...conds.map((p) => el('span', { class: 'tw-badge', text: p }))));
+  const bdRec = tweaked && det.tweakResult ? { ...state.record, ...det.tweak } : state.record;
+  calc.append(bd ? calcView(bd, bdRec, u.k) : el('div', { class: 'round-empty', text: '계산하고 있습니다.' }));
+  bottom.append(calc);
 
   // 입결
+  const ep = expPct(u, g);
   const hp = state.common.history_populations;
   const histRows = [];
   (d.history_years || []).forEach((exam, i) => {
@@ -929,21 +1227,24 @@ function renderDetail() {
     histRows.push(el('tr', {}, el('td', { text: year + '학년도' }), el('td', { text: fmtPct(v) }), el('td', { text: fin(popY) ? fmtRank(v / 100 * popY) : '—' })));
   });
   if (histRows.length) {
-    body.append(el('section', { class: 'sec' }, el('div', { class: 'sec-head' }, el('h3', { text: '입결' })),
+    bottom.append(el('section', { class: 'sec' }, el('div', { class: 'sec-head' }, el('h3', { text: '입결' })),
       el('table', { class: 'mini-table' }, el('thead', {}, el('tr', {}, el('th', { text: '' }), el('th', { text: GNAME[g] + ' 누백' }), el('th', { text: '등수' }))),
-        el('tbody', {}, el('tr', { class: 'is-now' }, el('td', { text: yr + '학년도 예상' }), el('td', { text: fmtPct(ep) }), el('td', { text: fin(ep) ? fmtRank(ep / 100 * pop(g)) : '—' })), ...histRows))));
+        el('tbody', {}, el('tr', { class: 'is-now' }, el('td', { text: yr + '학년도' }), el('td', { text: fmtPct(ep) }), el('td', { text: fin(ep) ? fmtRank(ep / 100 * pop(g)) : '—' })), ...histRows))));
   }
 
   // 모집
   if (u.q) {
     const cell = (v) => el('td', { class: fin(v) ? '' : 'none', text: fin(v) ? fmt(v) : '—' });
-    body.append(el('section', { class: 'sec' }, el('h3', { text: '모집 인원' }),
+    bottom.append(el('section', { class: 'sec' }, el('h3', { text: '모집 인원' }),
       el('table', { class: 'mini-table' },
         el('thead', {}, el('tr', {}, el('th', { text: '' }), el('th', { text: '모집' }), el('th', { text: '이월' }), el('th', { text: '추가합격' }))),
         el('tbody', {},
           el('tr', {}, el('td', { text: yr + '학년도' }), cell(u.q.c), cell(null), cell(null)),
           el('tr', {}, el('td', { text: (yr - 1) + '학년도' }), cell(u.q.pc), cell(u.q.pco), cell(u.q.pw))))));
   }
+  det.nums = tweenNumbers(body, det.nums);
+  body.scrollTop = scrollTop;
+  if (focusKey) body.querySelector(`[data-fk="${focusKey}"]`)?.focus({ preventScroll: true });
 }
 
 function areaCount(spec) { return (spec.replace(/탐\((\d)\)/g, (_, n) => '탐'.repeat(Number(n))).match(/[국수영탐한외]/g) || []).length; }
@@ -960,6 +1261,37 @@ function optRuleText(rules) {
   for (const [key, weighted] of [['선택', false], ['가중택', true]]) if (rules[key]) for (const p of rules[key].split('+')) parts.push(choiceText(p, weighted));
   return parts.join(' + ');
 }
+const AREA_NAME = { 국: '국어', 수: '수학', 영: '영어', 탐: '탐구', 한: '한국사', 외: '제2외' };
+// 반영식 코드(예: 연세인문, 한양상경가군)에서 대학 약칭과 군·점수 종류 꼬리를 떼어 이름만 남긴다.
+function schemeName(code, uni) {
+  const mo = ((data().universities || {})[uni] || {}).mo || '';
+  let n = mo && code.startsWith(mo) ? code.slice(mo.length) : code;
+  n = n.replace(/[가나다]군$/, '').replace(/(표|백)$/, '').replace(/교과$/, ' 교과').trim();
+  return n || code;
+}
+function parseRatio(short) {
+  if (!/^([국수영탐한외]\d+)(\s+[국수영탐한외]\d+)*$/.test(short || '')) return null;
+  return short.split(/\s+/).map((t) => [t[0], Number(t.slice(1))]);
+}
+function humanRule(short) {
+  return (short || '').split(' + ').map((p) => {
+    const m = p.trim().match(/^([국수영탐한외]+)(?:\s*택(\d))?(?:\s*(가중))?$/);
+    if (!m) return p;
+    return [...m[1]].map((c) => AREA_NAME[c]).join(' ') + (m[2] ? ` 중 ${m[2]}개` : '') + (m[3] ? ' 가중' : '');
+  }).join(' + ');
+}
+// 반영식 표시: 이름 + 비율 막대(고정 비율) 또는 풀어 쓴 규칙
+function schemeChip(code, uni) {
+  const short = schemeLabel(code).short;
+  const ratio = parseRatio(short);
+  const chip = el('span', { class: 'scheme-chip' }, el('b', { text: schemeName(code, uni) }));
+  if (ratio) {
+    const sum = ratio.reduce((a, [, v]) => a + v, 0) || 1;
+    chip.append(el('span', { class: 'sc-bar', role: 'img', 'aria-label': ratio.map(([a, v]) => `${AREA_NAME[a]} ${Math.round(100 * v / sum)}%`).join(', ') },
+      ...ratio.map(([a, v]) => el('i', { style: `flex-grow:${v}`, title: `${AREA_NAME[a]} ${Math.round(100 * v / sum)}%` }, el('span', { text: a + ' ' + Math.round(100 * v / sum) })))));
+  } else chip.append(el('small', { text: humanRule(short) }));
+  return chip;
+}
 function schemeLabel(code) {
   const hit = (state.common && state.common.scheme_labels || {})[code];
   return hit || { short: code, full: '' };
@@ -971,108 +1303,211 @@ function ruleText(rules) {
   if (opt) parts.push(opt);
   return parts.join(' + ');
 }
-function calcView(bd) {
+function calcView(bd, rec, code) {
+  // 내 표준점수·백분위·등급이 어떤 값으로 바뀌어 반영식에 들어가는지 과목마다 한 줄로 보여준다.
+  // 배율은 반영 점수 ÷ 내 점수. 만점 입력에서도 같은 배율이면 곱셈으로, 아니면 표(변표·등급표)로 표시한다.
   const wrap = el('div', { class: 'calc' });
+  const d = data();
   const req = bd.rules['필수'] || '';
   const optText = (bd.rules['선택'] || '') + (bd.rules['가중택'] || '');
-  const areaLetters = [['국어', '국'], ['수학', '수'], ['영어', '영'], ['탐구', '탐'], ['한국사', '한'], ['제2외국어', '외']];
+  const full = schemeLabel(code).full || '';
+  const pctScheme = /백분위/.test(full) && !/표준점수/.test(full);
+  const vScheme = /변환표준점수|변표/.test(full);
+  const topStd = (s) => Math.max(...(d.scoreList[s] || [rec[s]]));
+  const near = (a, b) => fin(a) && fin(b) && Math.abs(a - b) <= Math.max(0.0005 * Math.abs(b), 0.00005);
+  const { math, inq } = recordParts(rec);
+  // 한 과목의 환산: 입력(표준점수·백분위·등급) → 방법(× 배율 / 변표 / 등급표) → 반영 점수
+  const inputOf = (subject, basis, std = rec[subject]) => (basis === 'pct' ? pctOf(subject, std) : std);
+  const BASIS = { std: '표준점수', pct: '백분위' };
+  const order = pctScheme ? ['pct', 'std'] : ['std', 'pct'];
+  const conv = (subject, v, top, hint) => {
+    if (isGradeSubject(subject)) return { basis: '', input: rec[subject], unit: '등급', how: '등급표' };
+    for (const k of hint ? [hint] : order) {
+      if (k === 'var') return { basis: BASIS.pct, input: inputOf(subject, 'pct'), how: '변표' };
+      if (k === 'table') return { basis: BASIS[pctScheme ? 'pct' : 'std'], input: inputOf(subject, pctScheme ? 'pct' : 'std'), how: '환산표' };
+      const x = inputOf(subject, k); const tx = inputOf(subject, k, topStd(subject));
+      if (x && tx && fin(top) && near(v / x, top / tx)) return { basis: BASIS[k], input: x, how: '× ' + coef(v / x) };
+    }
+    if (vScheme && inq.includes(subject)) return { basis: BASIS.pct, input: inputOf(subject, 'pct'), how: '변표' };
+    return { basis: BASIS[pctScheme ? 'pct' : 'std'], input: inputOf(subject, pctScheme ? 'pct' : 'std'), how: '환산표' };
+  };
   const rows = [];
-  for (const [name, letter] of areaLetters) {
+  const area = (name, letter) => {
     const inReq = name === '한국사' ? !optText.includes('한') && !(bd.rules['한국사대체'] || '') : req.includes(letter);
     const inOpt = optText.includes(letter);
     const v = bd.areas[name]; const top = bd.top.areas[name];
-    if (!fin(v) || (!inReq && !inOpt) || (Math.abs(v) < 1e-9 && Math.abs(top || 0) < 1e-9)) continue;
-    rows.push({ name, v, top, part: inReq ? '필수' : '선택' });
+    if (!fin(v) || (!inReq && !inOpt) || (Math.abs(v) < 1e-9 && Math.abs(top || 0) < 1e-9)) return null;
+    return { part: inReq ? '필수' : '선택', v, top };
+  };
+  const push = (a, label, subject, extra = {}) => a && rows.push({ ...a, label, subject, ...conv(subject, a.v, a.top, extra.hint), ...extra });
+  push(area('국어', '국'), '국어', '국어');
+  push(area('수학', '수'), MATH.find((m) => m[0] === math)?.[1] || '수학', math);
+  push(area('영어', '영'), '영어', '영어');
+  const ta = area('탐구', '탐');
+  if (ta && inq.length) {
+    // 탐구1·탐구2는 높은 쪽부터. 표준점수로 들어가면 표준점수 순, 아니면 백분위 순으로 과목을 맞춘다.
+    const n = Number(bd.rules['탐구수'] || inq.length) || inq.length;
+    const t = [bd.areas['탐구1'], bd.areas['탐구2']]; const tt = [bd.top.areas['탐구1'], bd.top.areas['탐구2']];
+    // 과목을 탐구1·2에 맞추기: 반영식이 읽는 점수(표준점수·백분위) 순서. 배율이 맞는 쪽을 쓰고, 둘 다 아니면 변표·환산표.
+    const desc = (f) => [...inq].sort((a, b) => (f(b) ?? -1) - (f(a) ?? -1) || rec[b] - rec[a]);
+    let pick = null;
+    if (!vScheme) for (const k of order) {
+      const mine = desc((s) => inputOf(s, k)); const tops = desc((s) => inputOf(s, k, topStd(s)));
+      if (mine.slice(0, n).every((s, i) => near(t[i] / inputOf(s, k), tt[tops.indexOf(s)] / inputOf(s, k, topStd(s))))) { pick = { k, mine, tops }; break; }
+    }
+    const fb = vScheme || pctScheme ? 'pct' : 'std';
+    const seq = pick ? pick.mine : desc((s) => inputOf(s, fb));
+    seq.forEach((s, i) => {
+      if (i < n) push({ part: ta.part, v: t[i], top: pick ? tt[pick.tops.indexOf(s)] : null }, s, s, { hint: pick ? pick.k : vScheme ? 'var' : 'table', inq: true });
+      else rows.push({ part: ta.part, label: s, subject: s, v: null, skip: true, inq: true, basis: BASIS[pick ? pick.k : fb], input: inputOf(s, pick ? pick.k : fb) });
+    });
+    const bonus = ta.v - t.slice(0, n).reduce((a, x) => a + (x || 0), 0);
+    if (Math.abs(bonus) > 0.005) rows.push({ part: ta.part, label: '탐구 가산', subject: null, v: bonus, how: '' });
   }
+  push(area('한국사', '한'), '한국사', '한국사');
+  const second = Object.keys(rec).find((k) => SECOND.includes(k));
+  const fa = area('제2외국어', '외');
+  if (fa) { if (second) push(fa, second, second); else rows.push({ ...fa, label: '제2외국어', subject: null, how: '' }); }
+
   const comps = bd.components;
-  const segs = [];
-  let i = 0;
-  const reqRows = rows.filter((r) => r.part === '필수');
-  for (const r of reqRows) segs.push({ label: r.name, v: r.v, color: CALC_SHADES[i++ % CALC_SHADES.length] });
   const optValue = (comps['선택'] || 0) + (comps['가중택'] || 0);
-  if (Math.abs(optValue) > 1e-9) segs.push({ label: '선택 반영', v: optValue, color: CALC_SHADES[i++ % CALC_SHADES.length] });
   const extras = [['기본점수', comps['기본'] || 0], ['가감점', comps['가감'] || 0], ['내신', bd.extra || 0]].filter(([, v]) => Math.abs(v) > 1e-9);
-  for (const [label, v] of extras) segs.push({ label, v, color: CALC_SHADES[5] });
   const total = bd.total ?? bd.csat;
-  const stack = el('div', { class: 'calc-stack' });
-  const pos = segs.filter((s) => s.v > 0);
-  const sum = pos.reduce((a, s) => a + s.v, 0) || 1;
-  for (const s of pos) stack.append(el('span', { style: `width:${(100 * s.v / sum).toFixed(2)}%;background:${s.color}`, title: s.label }));
-  wrap.append(stack);
-  const line = (label, v, top, color, off = false) => el('div', { class: 'calc-row' + (off ? ' is-off' : '') },
-    el('span', { class: 'calc-name' }, el('i', { style: `background:${color || 'transparent'}` }), label),
-    el('span', { class: 'calc-bar' }, el('span', { style: `width:${fin(top) && top > 0 ? Math.min(100, 100 * v / top).toFixed(1) : 0}%` })),
-    el('b', {}, fmt(v, 2), el('small', { text: fin(top) ? '/ ' + fmt(top, 1) : '' })));
-  let k = 0;
-  for (const r of reqRows) wrap.append(line(r.name, r.v, r.top, CALC_SHADES[k++ % CALC_SHADES.length]));
-  const optRows = rows.filter((r) => r.part === '선택');
-  if (optRows.length) {
-    wrap.append(el('div', { class: 'calc-group', text: optRuleText(bd.rules) }));
-    for (const r of optRows) wrap.append(line(r.name, r.v, r.top, null));
-    if (Math.abs(optValue) > 1e-9) wrap.append(line('선택 반영', optValue, (bd.top.components['선택'] || 0) + (bd.top.components['가중택'] || 0), CALC_SHADES[k % CALC_SHADES.length]));
+
+  const ratio = parseRatio(schemeLabel(code).short);
+  if (ratio) {
+    const sum = ratio.reduce((a, [, v]) => a + v, 0) || 1;
+    wrap.append(el('div', { class: 'sc-bar calc-ratio', role: 'img', 'aria-label': ratio.map(([a, v]) => `${AREA_NAME[a]} ${Math.round(100 * v / sum)}%`).join(', ') },
+      ...ratio.map(([a, v]) => el('i', { style: `flex-grow:${v}` }, el('span', { text: AREA_NAME[a] + ' ' + Math.round(100 * v / sum) + '%' })))));
   }
-  for (const [label, v] of extras) wrap.append(line(label, v, null, CALC_SHADES[5]));
-  wrap.append(el('div', { class: 'calc-total' }, el('span', { text: '합계' }), el('b', { text: fmt(total, 2) })));
+
+  const key = (r) => (r.subject || r.label);
+  const inCell = (r) => {
+    if (!r.subject || !fin(r.input)) return el('td', { class: 'none', text: '' });
+    return el('td', { class: 'cv-in' }, r.basis ? el('small', { text: r.basis }) : '', el('span', { ...numAttrs('cin:' + key(r), r.input, 0), text: fmt(r.input, 0) + (r.unit || '') }));
+  };
+  const tr = (r, cls = '') => el('tr', { class: cls + (r.skip ? ' is-skip' : '') },
+    el('td', { text: r.inq ? (SHORT[r.label] || r.label) : r.label }), inCell(r),
+    el('td', { class: 'cv-how', text: r.skip ? '반영 안 함' : r.how || '' }),
+    el('td', r.skip ? { class: 'none', text: '—' } : { ...numAttrs('calc:' + key(r), r.v, 2), text: fmt(r.v, 2) }));
+  const tbody = el('tbody');
+  const reqRows = rows.filter((r) => r.part === '필수');
+  const optRows = rows.filter((r) => r.part === '선택');
+  for (const r of reqRows) tbody.append(tr(r));
+  if (optRows.length) {
+    tbody.append(el('tr', { class: 'calc-rule' }, el('td', { colspan: 4, text: optRuleText(bd.rules) })));
+    for (const r of optRows) tbody.append(tr(r, 'is-sub'));
+    if (Math.abs(optValue) > 1e-9) tbody.append(tr({ label: '선택 반영', subject: null, v: optValue, how: '' }));
+  }
+  for (const [label, v] of extras) tbody.append(tr({ label, subject: null, v, how: '' }));
+  wrap.append(el('table', { class: 'mini-table calc-table' },
+    el('thead', {}, el('tr', {}, el('th', { text: '' }), el('th', { text: '내 점수' }), el('th', { text: '환산' }), el('th', { text: '반영 점수' }))),
+    tbody,
+    el('tfoot', {}, el('tr', {}, el('td', { text: '합계' }), el('td', { text: '' }), el('td', { text: '' }), el('td', { ...numAttrs('calc:total', total, 2), text: fmt(total, 2) })))));
   return wrap;
 }
+// 배율 표기: 소수 넷째 자리까지, 끝의 0은 뺀다.
+function coef(c) { return String(Number(c.toFixed(4))); }
 
-function tweakView() {
+// 점수 조정: 과목마다 슬라이더. 오른쪽이 더 좋은 점수(등급은 1등급이 오른쪽). 원래 위치는 눈금으로 남긴다.
+function buildTweak() {
   const det = state.detail;
-  const u = det.unit;
   const rec = state.record;
-  const sec = el('section', { class: 'sec' }, el('div', { class: 'sec-head' }, el('h3', { text: '점수 조정' }),
-    el('button', { class: 'tw-button is-ghost is-sm', type: 'button', text: '되돌리기', onclick: () => { det.tweak = {}; det.tweakResult = null; renderDetail(); } })));
+  const d = data();
+  const reset = el('button', { class: 'tw-button is-ghost is-sm', type: 'button', 'data-fk': 'reset', text: '되돌리기', hidden: true,
+    onclick: () => { det.tweak = {}; det.tweakResult = null; clearTimeout(det.timer); syncTweak(); renderDetail(); } });
+  const sec = el('section', { class: 'sec' }, el('div', { class: 'sec-head' }, el('h3', { text: '점수 조정' }), reset));
   const box = el('div', { class: 'tweak' });
   const { math, inq } = recordParts(rec);
-  const subjects = [['국어', '국어'], [math, MATH.find((m) => m[0] === math)?.[1] || '수학'], ...inq.map((s) => [s, s]), ['영어', '영어'], ['한국사', '한국사'], ...Object.keys(rec).filter((k) => SECOND.includes(k)).map((k) => [k, k])];
+  const subjects = [['국어', '국어'], [math, MATH.find((m) => m[0] === math)?.[1] || '수학'], ...inq.map((x) => [x, x]), ['영어', '영어'], ['한국사', '한국사'], ...Object.keys(rec).filter((k) => SECOND.includes(k)).map((k) => [k, k])];
+  det.tiles = [];
   for (const [subject, label] of subjects) {
-    const base = rec[subject];
-    const cur = det.tweak[subject] ?? base;
     const grade = isGradeSubject(subject);
-    const val = el('b', { class: cur !== base ? 'changed' : '', text: grade ? cur + '등급' : String(cur) });
-    const steps = grade ? [[-1, '−1'], [1, '+1']] : [[-3, '−3'], [-1, '−1'], [1, '+1'], [3, '+3']];
-    const stepper = el('span', { class: 'stepper' }, ...steps.map(([delta, text]) => el('button', { type: 'button', text: grade ? (delta < 0 ? '올리기' : '내리기') : text, onclick: () => stepScore(subject, grade ? delta : delta) })));
-    box.append(el('div', { class: 'tweak-row' }, el('span', {}, label, val), stepper));
+    const base = rec[subject];
+    const list = grade ? null : [...(d.scoreList[subject] || [base])].sort((a, b) => a - b);
+    const toPos = (v) => (grade ? 10 - v : list.reduce((bi, x, i) => (Math.abs(x - v) < Math.abs(list[bi] - v) ? i : bi), 0));
+    const fromPos = (p) => (grade ? 10 - p : list[p]);
+    const min = grade ? 1 : 0; const max = grade ? 9 : Math.max(1, list.length - 1);
+    const pct = (p) => ((p - min) / (max - min)).toFixed(4);
+    const input = el('input', { type: 'range', class: 'tt-range', min, max, step: 1, value: toPos(base), 'aria-label': label + (grade ? ' 등급' : ' 표준점수'), 'data-fk': 'range:' + subject });
+    const wrap = el('div', { class: 'tt-slider', style: `--bf:${pct(toPos(base))};--pf:${pct(toPos(base))}` }, input);
+    const s = el('s'); const val = el('b', { class: 'tt-value' });
+    // 원래 값(취소선)을 누르면 이 과목만 되돌린다.
+    const baseBtn = el('button', { class: 'tt-base', type: 'button', hidden: true, title: '원래 점수로', 'aria-label': label + ' 원래 점수로', 'data-fk': 'base:' + subject, onclick: () => { setTweak(subject, base); input.focus({ preventScroll: true }); } }, tweakIcon('reset'), s);
+    // −/+ 는 한 칸씩. 누르고 있으면 계속 움직인다.
+    const basePos = toPos(base);
+    const move = (dir) => { const p = Math.max(min, Math.min(max, Number(input.value) + dir)); if (p !== Number(input.value)) { input.value = p; setTweak(subject, fromPos(p)); } };
+    const stepBtn = (dir) => {
+      const b = el('button', { class: 'tt-step', type: 'button', 'aria-label': label + (dir > 0 ? ' 올리기' : ' 내리기'), 'data-fk': (dir > 0 ? 'up:' : 'down:') + subject }, tweakIcon(dir > 0 ? 'plus' : 'minus'));
+      let hold = null;
+      const stop = () => { clearTimeout(hold); clearInterval(hold); hold = null; };
+      b.addEventListener('pointerdown', (ev) => { if (ev.button) return; ev.preventDefault(); b.setPointerCapture?.(ev.pointerId); move(dir); hold = setTimeout(() => { hold = setInterval(() => move(dir), 70); }, 380); });
+      for (const t of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(t, stop);
+      b.addEventListener('click', (ev) => { if (ev.detail === 0) move(dir); });
+      return b;
+    };
+    const down = stepBtn(-1); const up = stepBtn(1);
+    const tile = el('div', { class: 'tweak-tile' }, el('div', { class: 'tt-head' }, el('span', { text: label }), el('span', { class: 'tt-num' }, baseBtn, val)), el('div', { class: 'tt-row' }, down, wrap, up));
+    // 끌 때 원래 위치 가까이(전체 폭의 2.5%)에 오면 원래 위치에 붙는다. 키보드·버튼은 한 칸씩 그대로.
+    const snap = grade ? 0 : Math.max(1, Math.round((max - min) * 0.025));
+    let dragging = false;
+    input.addEventListener('pointerdown', () => { dragging = true; });
+    for (const t of ['pointerup', 'pointercancel', 'blur']) input.addEventListener(t, () => { dragging = false; });
+    input.addEventListener('input', () => {
+      let p = Number(input.value);
+      if (dragging && snap && p !== basePos && Math.abs(p - basePos) <= snap) { p = basePos; input.value = p; }
+      setTweak(subject, fromPos(p));
+    });
+    det.tiles.push({ subject, grade, base, input, s, val, tile, wrap, toPos, pct, baseBtn, down, up, min, max });
+    box.append(tile);
   }
   sec.append(box);
-  if (Object.keys(det.tweak).some((s) => det.tweak[s] !== rec[s])) {
-    const res = el('div', { class: 'tweak-result' });
-    const r = det.tweakResult;
-    if (!r) res.append(el('span', { class: 'tweak-cap', text: '계산하고 있습니다.' }));
-    else {
-      const before = gaugeOf(u);
-      const after = lineIndex(r.total, u.th);
-      const tb = tierOf(before); const ta = tierOf(after);
-      res.append(el('div', { class: 'tweak-cap' }, el('span', { text: '현재 ' + tb.label }), el('span', { text: '조정 후 ' + ta.label + '  ' + signed(r.total - (state.rows.get(u.i)?.score ?? r.total), 2) + '점' })));
-      res.append(gauge(after, { ghost: before }));
-    }
-    sec.append(res);
-  }
+  det.resetBtn = reset;
   return sec;
 }
-function stepScore(subject, delta) {
+function tweakIcon(kind) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('aria-hidden', 'true');
+  const d = { plus: 'M12 6v12M6 12h12', minus: 'M6 12h12', reset: 'M5 12a7 7 0 1 0 2.05-4.95M5 4.5v3.5h3.5' }[kind];
+  const path = document.createElementNS(NS, 'path'); path.setAttribute('d', d); svg.append(path);
+  return svg;
+}
+function syncTweak() {
   const det = state.detail;
-  const d = data();
-  const rec = state.record;
-  const cur = det.tweak[subject] ?? rec[subject];
-  let next;
-  if (isGradeSubject(subject)) next = Math.min(9, Math.max(1, cur + delta));
-  else {
-    const list = d.scoreList[subject] || [];
-    const target = cur + delta;
-    next = list.reduce((best, s) => (Math.abs(s - target) < Math.abs(best - target) ? s : best), cur);
-    if (next === cur && delta !== 0) {
-      const beyond = list.filter((s) => (delta > 0 ? s > cur : s < cur));
-      if (beyond.length) next = delta > 0 ? Math.min(...beyond) : Math.max(...beyond);
-    }
+  if (!det || !det.tiles) return;
+  for (const t of det.tiles) {
+    const cur = det.tweak[t.subject] ?? t.base;
+    const show = (v) => (t.grade ? v + '등급' : String(v));
+    const changed = cur !== t.base;
+    t.tile.classList.toggle('is-changed', changed);
+    t.s.textContent = show(t.base);
+    t.baseBtn.hidden = !changed;
+    if (fin(t.shown) && t.shown !== cur) tweenNum(t.val, t.shown, cur, (x) => show(Math.round(x)), 200); else t.val.textContent = show(cur);
+    t.shown = cur;
+    const pos = t.toPos(cur);
+    if (Number(t.input.value) !== pos) t.input.value = pos;
+    t.wrap.style.setProperty('--pf', t.pct(pos));
+    t.down.disabled = pos <= t.min; t.up.disabled = pos >= t.max;
   }
-  det.tweak[subject] = next;
+  det.resetBtn.hidden = !isTweaked(det);
+}
+function setTweak(subject, v) {
+  const det = state.detail;
+  if (!det) return;
+  if (v === state.record[subject]) delete det.tweak[subject]; else det.tweak[subject] = v;
   det.tweakResult = null;
-  renderDetail();
-  const record = { ...rec, ...det.tweak };
-  const unit = det.unit;
-  breakdown(record, unit.k).then((bd) => { if (state.detail === det && JSON.stringify({ ...rec, ...det.tweak }) === JSON.stringify(record)) { det.tweakResult = bd; renderDetail(); } })
-    .catch((err) => toast(err.message));
+  syncTweak();
+  clearTimeout(det.timer);
+  if (!isTweaked(det)) { renderDetail(); return; }
+  // 계산을 기다리는 동안 게이지와 '나' 행을 흐리게. 끌기가 멈추면(140ms) 한 번 계산한다.
+  det.meterEl.classList.add('is-pending');
+  det.topEl.querySelector('.ladder tr.is-me')?.classList.add('is-pending');
+  det.timer = setTimeout(() => {
+    const record = { ...state.record, ...det.tweak };
+    breakdown(record, det.unit.k).then((bd) => {
+      if (state.detail === det && JSON.stringify({ ...state.record, ...det.tweak }) === JSON.stringify(record)) { det.tweakResult = bd; renderDetail(); }
+    }).catch((err) => toast(err.message));
+  }, 140);
 }
 
 /* ───────── Input sheet ───────── */
@@ -1135,14 +1570,15 @@ function renderInput() {
   };
   const row = (name, head, body) => form.append(el('div', { class: 'score-row' }, el('div', { class: 'score-row-head' }, el('span', { class: 'score-row-name', text: name }), head || ''), body));
   const scoreBody = (subject, label) => {
-    const out = el('span', { class: 'score-info', text: infoText(subject, rec[subject]) });
+    const out = el('span', { class: 'score-info' });
+    setInfo(out, subject, rec[subject]);
     const box = el('div', { class: 'score-row-body' });
-    if (raw) box.append(...rawInputs(subject, (ss) => { if (fin(ss)) rec[subject] = ss; out.textContent = infoText(subject, rec[subject]); }));
+    if (raw) box.append(...rawInputs(subject, (ss) => { if (fin(ss)) rec[subject] = ss; setInfo(out, subject, rec[subject]); }));
     else {
-      const input = el('input', { class: 'tw-input', type: 'number', inputmode: 'numeric', placeholder: '—', value: rec[subject] ?? '', 'aria-label': label + ' 표준점수' });
+      const input = el('input', { class: 'tw-input', type: 'number', inputmode: 'numeric', placeholder: '—', value: rec[subject] ?? '', 'aria-label': label + ' 표준점수', 'data-key': subject });
       input.addEventListener('change', () => {
-        if (input.value === '') { rec[subject] = null; out.textContent = ''; return; }
-        const v = snapScore(subject, Number(input.value)); rec[subject] = v; input.value = v; out.textContent = infoText(subject, v);
+        if (input.value === '') { rec[subject] = null; out.replaceChildren(); return; }
+        const v = snapScore(subject, Number(input.value)); rec[subject] = v; input.value = v; setInfo(out, subject, v);
       });
       box.append(input);
     }
@@ -1174,6 +1610,8 @@ function renderInput() {
   $('input-status').textContent = GNAME[streamOf(rec)];
 }
 function fillInputExample() {
+  // 국어·수학·탐구1·탐구2 입력칸 순서대로 이전 값을 기억해 두었다가 새 값으로 이어 바꾼다.
+  const before = [...$('input-form').querySelectorAll('input[data-key]')].map((n) => (n.value === '' ? null : Number(n.value)));
   const group = streamOf(draft.record);
   const pool = data().random[group] || [];
   if (!pool.length) return;
@@ -1189,12 +1627,17 @@ function fillInputExample() {
   draft.mode = 'std';
   draft.korean = Math.random() < 0.4 ? '국어(언매)' : '국어(화작)';
   renderInput();
+  [...$('input-form').querySelectorAll('input[data-key]')].forEach((n, i) => {
+    const from = before[i]; const to = Number(n.value);
+    if (fin(from) && fin(to)) tweenNum(n, from, to, (x) => String(Math.round(x)));
+  });
 }
-function infoText(subject, v) {
-  if (!fin(v)) return '';
-  if (isGradeSubject(subject)) return v + '등급';
+function setInfo(out, subject, v) {
+  out.replaceChildren();
+  if (!fin(v)) return;
+  if (isGradeSubject(subject)) { out.append(el('b', { class: 'si-grade', text: v + '등급' })); return; }
   const p = pctOf(subject, v); const gr = gradeOf(subject, v);
-  return `백분위 ${p ?? '—'}  ${gr ?? '—'}등급`;
+  out.append(el('b', { class: 'si-grade', 'data-g': gr ?? '', text: (gr ?? '—') + '등급' }), el('span', { class: 'si-pct' }, el('i', { text: '백분위' }), String(p ?? '—')));
 }
 function gradeChips(subject, active, onPick) {
   const box = el('div', { class: 'grade-chips', role: 'group', 'aria-label': subject + ' 등급' });
@@ -1266,7 +1709,7 @@ function collapsible(wrap, row, key, build, openNow) {
 let thumbQueued = false;
 function syncThumbs() {
   thumbQueued = false;
-  for (const box of document.querySelectorAll('.tw-segmented, .tab-bar')) {
+  for (const box of document.querySelectorAll('.tw-segmented')) {
     let thumb = box.querySelector(':scope > .seg-thumb');
     if (!thumb) {
       thumb = el('span', { class: 'seg-thumb', 'aria-hidden': 'true' });
@@ -1313,19 +1756,60 @@ function markEntering(stateName) {
   }
   lastBodyState = stateName;
 }
+/* 목록이 바뀔 때 새 항목이 짧게 올라오며 나타난다. */
+function swapIn(...ids) {
+  if (reduceMotion()) return;
+  for (const id of ids) {
+    const node = $(id);
+    if (!node) continue;
+    node.classList.remove('is-swapping');
+    void node.offsetWidth;
+    node.classList.add('is-swapping');
+    clearTimeout(node._swap);
+    node._swap = setTimeout(() => node.classList.remove('is-swapping'), 900);
+  }
+}
 function countTo(node, from, to, format, { log = false, duration = 800 } = {}) {
-  if (!fin(to) || reduceMotion()) { node.textContent = format(to); return; }
+  if (!fin(to) || !fin(from) || reduceMotion()) { node._anim = null; node.textContent = format(to); return; }
   const start = performance.now();
+  node._anim = start;
   const a = log ? Math.log(Math.max(from, 1e-6)) : from;
   const b = log ? Math.log(Math.max(to, 1e-6)) : to;
   const step = (now) => {
     const t = Math.min(1, (now - start) / duration);
     const k = 1 - Math.pow(1 - t, 3);
     const v = a + (b - a) * k;
+    if (node._anim !== start) return;
     node.textContent = format(t >= 1 ? to : (log ? Math.exp(v) : v));
     if (t < 1) requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
+}
+
+function tweenNum(node, from, to, format, duration = 320) {
+  const set = (x) => { if (node.tagName === 'INPUT') node.value = x; else node.textContent = x; };
+  if (!fin(from) || !fin(to) || from === to || reduceMotion()) { node._anim = null; set(format(to)); return; }
+  const start = performance.now();
+  node._anim = start;
+  const step = (now) => {
+    if (node._anim !== start) return;
+    const t = Math.min(1, (now - start) / duration);
+    const k = 1 - Math.pow(1 - t, 3);
+    set(format(t >= 1 ? to : from + (to - from) * k));
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+// data-nk(키)·data-nv(값)·data-nd(소수 자리)·data-ns(접미사)·data-nf(signed) 가 붙은 숫자를 이전 렌더 값에서 이어 바꾼다.
+const numAttrs = (key, v, d = 0, suffix = '', signedFmt = false) => (fin(v) ? { 'data-nk': key, 'data-nv': String(v), 'data-nd': String(d), 'data-ns': suffix, 'data-nf': signedFmt ? 's' : '' } : {});
+function tweenNumbers(root, prev) {
+  const next = {};
+  for (const n of root.querySelectorAll('[data-nk]')) {
+    const k = n.dataset.nk; const v = Number(n.dataset.nv); const d = Number(n.dataset.nd || 0); const suf = n.dataset.ns || '';
+    next[k] = v;
+    if (prev && k in prev && prev[k] !== v) tweenNum(n, prev[k], v, (x) => (n.dataset.nf === 's' ? (Math.abs(x) < 0.005 ? (0).toFixed(d) : signed(x, d)) : fmt(x, d)) + suf);
+  }
+  return next;
 }
 
 /* ───────── Menu select (native select 대체) ───────── */
@@ -1353,6 +1837,7 @@ function enhanceSelect(sel) {
   if (sel._menu) { syncMenu(sel); return sel; }
   const trigger = el('button', { type: 'button', class: sel.className + ' menu-trigger', 'aria-haspopup': 'listbox', 'aria-expanded': 'false', 'aria-label': sel.getAttribute('aria-label') || '' }, el('span', { class: 'menu-value' }));
   sel._menu = trigger;
+  if (sel.disabled) trigger.disabled = true;
   sel.classList.add('menu-native');
   sel.tabIndex = -1;
   sel.setAttribute('aria-hidden', 'true');
@@ -1429,7 +1914,7 @@ const QUICK_DEFAULTS = {
   H: { korean: '국어(화작)', math: '수학(확통)', inq: ['생활과 윤리', '사회·문화'] },
   S: { korean: '국어(언매)', math: '수학(미적)', inq: ['생명과학 Ⅰ', '지구과학 Ⅰ'] },
 };
-const quick = { group: 'H', korean: null, math: null, inq: null, values: {} };
+const quick = { group: 'H', korean: null, math: null, inq: null, second: '', values: {} };
 function quickReset(group) {
   const d = QUICK_DEFAULTS[group];
   quick.group = group;
@@ -1439,9 +1924,9 @@ function quickReset(group) {
 }
 function renderQuick() {
   if (!quick.korean) quickReset('H');
-  for (const b of $('quick-group').children) b.classList.toggle('is-active', b.dataset.group === quick.group);
   const box = $('quick-fields');
   box.replaceChildren();
+  if (!renderQuick.shown) { renderQuick.shown = true; swapIn('quick-fields'); }
   const pick = (options, value, onChange, label) => {
     const sel = el('select', { class: 'cf-pick', 'aria-label': label });
     for (const [v, t, disabled] of options) sel.append(el('option', { value: v, text: t, selected: v === value ? true : null, disabled: disabled ? true : null }));
@@ -1449,19 +1934,23 @@ function renderQuick() {
     return sel;
   };
   const numberCell = (key, head) => {
-    const input = el('input', { class: 'cf-value', type: 'number', inputmode: 'numeric', placeholder: '—', value: quick.values[key] ?? '', 'aria-label': key + ' 표준점수' });
-    input.addEventListener('input', () => { quick.values[key] = input.value; });
+    const input = el('input', { class: 'cf-value', type: 'number', inputmode: 'numeric', placeholder: '—', value: quick.values[key] ?? '', 'aria-label': key + ' 표준점수', 'data-key': key });
+    input.addEventListener('input', () => { quick.values[key] = input.value; syncQuickReady(); });
     const cell = el('div', { class: 'cf' }, head, input);
     cell.addEventListener('click', (ev) => { if (ev.target === cell) input.focus(); });
     return cell;
   };
-  const gradeCell = (key) => {
-    const sel = el('select', { class: 'cf-value cf-grade', 'aria-label': key + ' 등급' });
+  const gradeSelect = (key, disabled = false) => {
+    const sel = el('select', { class: 'cf-value cf-grade', 'aria-label': key + ' 등급', disabled: disabled ? true : null, 'data-key': key });
     sel.append(el('option', { value: '', text: '—' }));
     for (let g = 1; g <= 9; g++) sel.append(el('option', { value: g, text: g + '등급', selected: String(quick.values[key]) === String(g) ? true : null }));
-    sel.addEventListener('change', () => { quick.values[key] = sel.value; });
-    return el('div', { class: 'cf' }, el('span', { class: 'cf-name', text: key }), sel);
+    sel.addEventListener('change', () => { quick.values[key] = sel.value; syncQuickReady(); });
+    return sel;
   };
+  const gradeCell = (key) => el('div', { class: 'cf' }, el('span', { class: 'cf-name', text: key }), gradeSelect(key));
+  const secondCell = () => el('div', { class: 'cf cf-second' + (quick.second ? '' : ' is-off') },
+    pick([['', '제2외국어'], ...SECOND.map((n) => [n, n])], quick.second, (v) => { quick.second = v; if (!v) delete quick.values['제2외국어']; renderQuick(); }, '제2외국어/한문'),
+    gradeSelect('제2외국어', !quick.second));
   const inqOptions = (idx) => [...SOCIAL, ...SCIENCE].map((n) => [n, n, quick.inq.includes(n) && quick.inq[idx] !== n]);
   box.append(
     numberCell('국어', pick(KOREAN.map(([k, t]) => [k, t]), quick.korean, (v) => { quick.korean = v; }, '국어 선택과목')),
@@ -1470,9 +1959,11 @@ function renderQuick() {
     numberCell('탐구1', pick(inqOptions(0), quick.inq[0], (v) => { quick.inq[0] = v; renderQuick(); }, '탐구 1')),
     numberCell('탐구2', pick(inqOptions(1), quick.inq[1], (v) => { quick.inq[1] = v; renderQuick(); }, '탐구 2')),
     gradeCell('한국사'),
+    secondCell(),
   );
   for (const sel of box.querySelectorAll('select')) enhanceSelect(sel);
   $('start-raw').hidden = !state.common.raw[state.edition];
+  syncQuickReady();
 }
 async function submitQuick(ev) {
   ev.preventDefault();
@@ -1490,6 +1981,7 @@ async function submitQuick(ev) {
   rec[quick.inq[0]] = std(quick.inq[0], '탐구1');
   rec[quick.inq[1]] = std(quick.inq[1], '탐구2');
   rec['한국사'] = grade('한국사');
+  if (quick.second) rec[quick.second] = grade('제2외국어');
   const missing = Object.entries(rec).find(([, x]) => !fin(x));
   if (missing) { toast(subjectName(missing[0]) + ' 점수를 입력해 주세요.'); return; }
   await startWith(rec, quick.korean);
@@ -1503,14 +1995,43 @@ async function startWith(rec, korean) {
   persist();
   await refresh();
 }
+// 필요한 칸이 모두 채워지면 전송 버튼을 검정으로. 비활성화는 하지 않는다(누르면 빠진 칸을 알려준다).
+function syncQuickReady() {
+  const v = quick.values;
+  const has = (k) => v[k] !== undefined && v[k] !== '';
+  const ready = ['국어', '수학', '탐구1', '탐구2', '영어', '한국사'].every(has) && (!quick.second || has('제2외국어'));
+  $('quick-send').classList.toggle('is-ready', ready);
+}
+// 주사위: 누를 때마다 눈이 바뀌고 90° 돈다.
+const DICE_FACES = { 1: ['c'], 2: ['tl', 'br'], 3: ['tl', 'c', 'br'], 4: ['tl', 'tr', 'bl', 'br'], 5: ['tl', 'tr', 'c', 'bl', 'br'], 6: ['tl', 'tr', 'ml', 'mr', 'bl', 'br'] };
+function rollDice(btn) {
+  const prev = Number(btn.dataset.face || 5);
+  let face = prev;
+  while (face === prev) face = 1 + Math.floor(Math.random() * 6);
+  btn.dataset.face = face;
+  for (const pip of btn.querySelectorAll('.pip')) pip.classList.toggle('is-on', DICE_FACES[face].includes(pip.dataset.p));
+  btn.style.setProperty('--roll', (Number(btn.style.getPropertyValue('--roll').replace('deg', '') || 0) + 90) + 'deg');
+}
 function fillExample(group) {
   const pool = data().random[group] || [];
   if (!pool.length) return;
   const target = Math.log10(0.3) + Math.random() * (Math.log10(15) - Math.log10(0.3));
   const near = pool.filter(([p]) => Math.abs(Math.log10(Math.max(p, 0.001)) - target) < 0.06);
   const choice = near.length ? near[Math.floor(Math.random() * near.length)] : pool[Math.floor(Math.random() * pool.length)];
+  const prev = { ...quick.values };
   quickFrom(choice[1], Math.random() < 0.4 ? '국어(언매)' : '국어(화작)');
   renderQuick();
+  const box = $('quick-fields');
+  for (const [key, v] of Object.entries(quick.values)) {
+    const node = box.querySelector(`[data-key="${key}"]`);
+    if (!node) continue;
+    const target = node.tagName === 'SELECT' ? node._menu && node._menu.querySelector('.menu-value') : node;
+    if (!target) continue;
+    const from = Number(prev[key]); const to = Number(v);
+    const had = prev[key] !== undefined && prev[key] !== '';
+    if (had && fin(from) && fin(to)) tweenNum(target, from, to, (x) => (node.tagName === 'SELECT' ? Math.round(x) + '등급' : String(Math.round(x))));
+    else if (!reduceMotion()) { const cell = target.closest('.menu-trigger') || target; cell.classList.remove('is-rising'); void cell.offsetWidth; cell.classList.add('is-rising'); }
+  }
 }
 function quickFrom(rec, korean) {
   const keys = Object.keys(rec);
@@ -1520,7 +2041,9 @@ function quickFrom(rec, korean) {
   quick.korean = korean || quick.korean || '국어(화작)';
   quick.math = math;
   quick.inq = inq;
+  quick.second = keys.find((k) => SECOND.includes(k)) || '';
   quick.values = { 국어: rec['국어'], 수학: rec[math], 영어: rec['영어'], 탐구1: rec[inq[0]], 탐구2: rec[inq[1]], 한국사: rec['한국사'] };
+  if (quick.second) quick.values['제2외국어'] = rec[quick.second];
 }
 function resetToStart() {
   if (state.record) {
@@ -1537,7 +2060,7 @@ function resetToStart() {
   window.scrollTo({ top: 0 });
 }
 function setProgress(text, ratio) {
-  if (text) { $('loading-text').textContent = text; if (!state.record) $('quick-status').textContent = text; }
+  if (text) $('loading-text').textContent = text;
   if (fin(ratio)) { $('loading-fill').parentElement.classList.add('is-det'); $('loading-fill').style.width = Math.round(100 * Math.min(1, ratio)) + '%'; }
 }
 window.addEventListener('calc-progress', (ev) => {
@@ -1557,7 +2080,7 @@ function openSettings() {
     if (state.record) { for (const [s, v] of Object.entries(state.record)) if (!isGradeSubject(s)) state.record[s] = snapScore(s, v); }
     openSettings(); await refresh();
   } })));
-  body.append(el('section', { class: 'sec' }, el('h3', { text: '기준 시험' }), ed));
+  if (Object.keys(EDITIONS).length > 1) body.append(el('section', { class: 'sec' }, el('h3', { text: '기준 시험' }), ed));
   const cross = el('input', { type: 'checkbox', class: 'tw-check', checked: state.settings.cross ? true : null });
   cross.addEventListener('change', () => { state.settings.cross = cross.checked; persist(); renderAll(); });
   body.append(el('section', { class: 'sec' }, el('h3', { text: '지원 범위' }), el('div', { class: 'set-list' }, el('label', { class: 'set-row' }, '교차지원', cross))));
@@ -1580,7 +2103,13 @@ function showSheet(id) {
   $('scrim').classList.remove('is-closing');
   $('scrim').hidden = false;
   document.body.style.overflow = 'hidden';
+  // 열 때 제목으로 초점을 옮기고, 닫으면 연 요소로 돌려준다.
+  const opener = document.activeElement;
+  if (opener && !opener.closest('.sheet')) sheetOpener = opener;
+  const title = $(id).querySelector('h2');
+  if (title) { title.tabIndex = -1; title.focus({ preventScroll: true }); }
 }
+let sheetOpener = null;
 function hideSheets() {
   closeMenu();
   const open = [...document.querySelectorAll('.sheet')].filter((s) => !s.hidden);
@@ -1593,12 +2122,25 @@ function hideSheets() {
   } else finish();
   document.body.style.overflow = '';
   if (state.detail) { state.detail = null; if (state.view === 'list') renderList(); }
+  if (sheetOpener && sheetOpener.isConnected) sheetOpener.focus({ preventScroll: true });
+  sheetOpener = null;
 }
 function setView(v) {
   state.view = v;
+  document.body.dataset.view = v;
   for (const b of document.querySelectorAll('[data-view]')) b.classList.toggle('is-active', b.dataset.view === v);
   renderAll();
   window.scrollTo({ top: 0 });
+  if (v === 'find' && window.matchMedia('(hover: hover)').matches) $('find-query').focus({ preventScroll: true });
+}
+let favShown = null;
+function renderFavCount() {
+  const n = state.favorites.size;
+  const b = $('fav-count');
+  b.hidden = !n;
+  b.textContent = n > 99 ? '99+' : String(n);
+  if (favShown !== null && n > favShown) { b.classList.remove('is-pop'); void b.offsetWidth; b.classList.add('is-pop'); }
+  favShown = n;
 }
 
 function renderAll() {
@@ -1612,6 +2154,8 @@ function renderAll() {
   if (start) renderQuick();
   $('edition-badge').textContent = edName();
   renderStrip();
+  renderFavCount();
+  document.body.dataset.view = state.view;
   for (const v of ['overview', 'find', 'list']) $('view-' + v).hidden = !has || state.view !== v;
   if (!has) return;
   if (state.view === 'overview') { renderReport(); renderConv(); renderPosition(); renderRecCategory(); renderRecs(); }
@@ -1651,26 +2195,30 @@ async function boot() {
 function bind() {
   for (const b of document.querySelectorAll('[data-view]')) b.addEventListener('click', () => setView(b.dataset.view));
   $('score-strip').addEventListener('click', () => openInput());
+  $('report-edit').addEventListener('click', () => openInput());
+  $('open-wheel').addEventListener('click', openWheel);
   $('quick').addEventListener('submit', submitQuick);
-  for (const b of $('quick-group').children) b.addEventListener('click', () => { if (quick.group !== b.dataset.group) { quickReset(b.dataset.group); renderQuick(); } });
-  $('quick-dice').addEventListener('click', () => fillExample(quick.group));
+  $('quick-dice').addEventListener('click', (ev) => { rollDice(ev.currentTarget); fillExample(Math.random() < 0.5 ? 'H' : 'S'); });
   $('input-reset').addEventListener('click', resetToStart);
   $('start-raw').addEventListener('click', () => openInput('raw'));
   $('open-settings').addEventListener('click', openSettings);
   $('scrim').addEventListener('click', hideSheets);
   for (const b of document.querySelectorAll('[data-close]')) b.addEventListener('click', hideSheets);
-  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') hideSheets(); });
-  for (const b of $('group-switch').children) b.addEventListener('click', () => { state.group = b.dataset.group; persist(); renderAll(); });
-  for (const b of $('conv-tab').children) b.addEventListener('click', () => { state.convTab = b.dataset.tab; persist(); renderConv(); });
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape') hideSheets();
+    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '');
+    if (ev.key === '/' && !typing && !ev.metaKey && !ev.ctrlKey && document.body.dataset.state === 'app' && $('scrim').hidden) { ev.preventDefault(); setView('find'); }
+  });
+  for (const b of $('group-switch').children) b.addEventListener('click', () => { state.group = b.dataset.group; persist(); renderAll(); swapIn('conv-list', 'recs'); });
+  for (const b of $('conv-tab').children) b.addEventListener('click', () => { state.convTab = b.dataset.tab; persist(); renderConv(); swapIn('conv-list'); });
   for (const b of $('basis-switch').children) b.addEventListener('click', () => { state.basis = b.dataset.basis; persist(); renderPosition(); });
   for (const b of $('input-mode').children) b.addEventListener('click', () => { draft.mode = b.dataset.mode; renderInput(); });
   $('input-apply').addEventListener('click', applyInput);
-  $('input-dice').addEventListener('click', fillInputExample);
+  $('input-dice').addEventListener('click', (ev) => { rollDice(ev.currentTarget); fillInputExample(); });
   let timer;
-  $('find-query').addEventListener('input', (ev) => { clearTimeout(timer); timer = setTimeout(() => { state.query = ev.target.value.trim(); renderFind(); }, 120); });
-  for (const b of $('find-round').children) b.addEventListener('click', () => { state.findRound = b.dataset.round; renderFindCategory(); renderFind(); });
-  let rt;
-  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (state.view === 'overview' && state.result) renderPosition(); }, 150); });
+  $('find-query').addEventListener('input', (ev) => { $('find-clear').hidden = !ev.target.value; clearTimeout(timer); timer = setTimeout(() => { state.query = ev.target.value.trim(); renderFind(); }, 120); });
+  $('find-clear').addEventListener('click', () => { const q = $('find-query'); q.value = ''; q.dispatchEvent(new Event('input')); q.focus(); });
+  for (const b of $('find-round').children) b.addEventListener('click', () => { state.findRound = b.dataset.round; renderFindCategory(); renderFind(); swapIn('find-list'); });
 }
 
 document.addEventListener('DOMContentLoaded', boot);

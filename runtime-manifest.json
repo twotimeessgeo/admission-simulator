@@ -1,5 +1,5 @@
 {
-  "sha256": "9a2a2fda9975b1cc03559d9fd5148216b4f5823397140ea2d21cbf318a922a48",
+  "sha256": "d0353c8efc74d5134a626069a91b7046ebca8388fb63fc47478f74000801bd1e",
   "files": [
     {
       "path": "runtime/admission_sim/cache/september_official_20260929_restrict.json",
@@ -11,7 +11,7 @@
     },
     {
       "path": "runtime/admission_sim/data/ux7_public_september_20260929.json",
-      "bytes": 1115080
+      "bytes": 1151088
     },
     {
       "path": "runtime/admission_sim/eligibility.py",

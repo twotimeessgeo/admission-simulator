@@ -1,11 +1,7 @@
-/*
- * TWK Lausanne — local install mapping.
- * Web projects that ship the font files (e.g. country-map-maker/fonts/) point `src` at those files instead;
- * the weights must stay the same: 200 = display, 300 = UI/body Latin.
- */
+/* TWK Lausanne — 공개판용. 폰트 파일을 함께 싣는다(build_pages.py가 design-system/fonts.css를 이 내용으로 교체). */
 @font-face {
   font-family: "TWK Lausanne";
-  src: local("TWK Lausanne 200"), local("TWKLausanne-200");
+  src: url("../fonts/TWKLausanne-200.woff2") format("woff2");
   font-style: normal;
   font-weight: 200;
   font-display: swap;
@@ -13,7 +9,7 @@
 
 @font-face {
   font-family: "TWK Lausanne";
-  src: local("TWK Lausanne 300"), local("TWKLausanne-300");
+  src: url("../fonts/TWKLausanne-300.woff2") format("woff2");
   font-style: normal;
   font-weight: 300 700;
   font-display: swap;

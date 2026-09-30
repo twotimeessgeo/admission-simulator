@@ -8,27 +8,25 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="./design-system/index.css">
-  <link rel="stylesheet" href="./app.css?v=22eb7294ee">
-  <script src="./pages_api.js?v=22eb7294ee" defer></script>
-  <script src="./app.js?v=22eb7294ee" defer></script>
+  <link rel="stylesheet" href="./app.css?v=638d2b2cc5">
+  <script src="./pages_api.js?v=638d2b2cc5" defer></script>
+  <script src="./app.js?v=638d2b2cc5" defer></script>
 </head>
 <body>
   <header class="tw-nav is-static">
     <div class="tw-nav-inner">
-      <span class="tw-brand" lang="en">twotimess calculator</span>
+      <button type="button" class="tw-brand brand-home" data-view="overview" lang="en">twotimess calculator</button>
       <span class="tw-nav-spacer"></span>
       <span id="edition-badge" class="tw-badge"></span>
+      <button id="nav-find" class="icon-btn nav-view" type="button" data-view="find" aria-label="대학 찾기" title="대학 찾기"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></button>
+      <button id="nav-list" class="icon-btn nav-view" type="button" data-view="list" aria-label="모의지원" title="모의지원"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.2 4.9 13.3a4.6 4.6 0 0 1 6.5-6.6l.6.6.6-.6a4.6 4.6 0 0 1 6.5 6.6Z"/></svg><b id="fav-count" class="nav-count" hidden></b></button>
       <button id="open-settings" class="icon-btn" type="button" aria-label="설정" title="설정"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l2-1.6-2-3.4-2.4.9a7.4 7.4 0 0 0-2.6-1.5L14 2.4h-4l-.4 2.5A7.4 7.4 0 0 0 7 6.4l-2.4-.9-2 3.4 2 1.6a7.6 7.6 0 0 0 0 3l-2 1.6 2 3.4 2.4-.9a7.4 7.4 0 0 0 2.6 1.5l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 2.6-1.5l2.4.9 2-3.4Z"/></svg></button>
     </div>
   </header>
 
   <div class="tw-subnav app-subnav">
     <div class="tw-subnav-inner">
-      <nav class="tw-segmented app-tabs" aria-label="화면">
-        <button type="button" data-view="overview" class="is-active">성적 분석</button>
-        <button type="button" data-view="find">대학 찾기</button>
-        <button type="button" data-view="list">모의지원</button>
-      </nav>
+      <button id="nav-back" class="icon-btn nav-back" type="button" data-view="overview" aria-label="성적 분석" title="성적 분석"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
       <button id="score-strip" class="score-strip" type="button" aria-label="성적 수정"></button>
     </div>
   </div>
@@ -45,11 +43,7 @@
       <form id="quick" class="composer" novalidate>
         <div id="quick-fields" class="composer-fields"></div>
         <div class="composer-foot">
-          <div id="quick-group" class="tw-segmented">
-            <button type="button" data-group="H" class="is-active">문과</button>
-            <button type="button" data-group="S">이과</button>
-          </div>
-          <button id="quick-dice" class="icon-btn composer-dice" type="button" aria-label="예시 성적" title="예시 성적"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="9" cy="9" r="1.1" class="pip"/><circle cx="15" cy="9" r="1.1" class="pip"/><circle cx="12" cy="12" r="1.1" class="pip"/><circle cx="9" cy="15" r="1.1" class="pip"/><circle cx="15" cy="15" r="1.1" class="pip"/></svg></button>
+          <button id="quick-dice" class="icon-btn composer-dice" type="button" aria-label="예시 성적" title="예시 성적"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="9" cy="9" r="1.1" class="pip is-on" data-p="tl"/><circle cx="15" cy="9" r="1.1" class="pip is-on" data-p="tr"/><circle cx="9" cy="12" r="1.1" class="pip" data-p="ml"/><circle cx="12" cy="12" r="1.1" class="pip is-on" data-p="c"/><circle cx="15" cy="12" r="1.1" class="pip" data-p="mr"/><circle cx="9" cy="15" r="1.1" class="pip is-on" data-p="bl"/><circle cx="15" cy="15" r="1.1" class="pip is-on" data-p="br"/></svg></button>
           <span id="quick-status" class="composer-status" aria-live="polite">표준점수</span>
           <button id="quick-send" class="composer-send" type="submit" aria-label="결과 보기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
         </div>
@@ -65,7 +59,7 @@
         <p id="loading-text">성적을 계산하고 있습니다.</p>
       </div>
       <div class="skeleton" aria-hidden="true">
-        <div class="sk-col"><i class="sk sk-title"></i><i class="sk sk-card"></i><i class="sk sk-title"></i><i class="sk sk-chart"></i></div>
+        <div class="sk-col"><i class="sk sk-title"></i><i class="sk sk-pos"></i><i class="sk sk-title"></i><i class="sk sk-card"></i></div>
         <div class="sk-col"><i class="sk sk-title"></i><i class="sk sk-list"></i></div>
       </div>
     </div>
@@ -73,24 +67,9 @@
     <section id="view-overview" class="view" hidden>
       <div class="overview-top">
         <section class="block ot-report">
-          <div class="block-head"><h2>성적표</h2></div>
+          <div class="block-head"><h2>성적표</h2><button id="report-edit" class="icon-btn" type="button" aria-label="성적 수정" title="성적 수정"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16Z"/><path d="m13.5 6.5 4 4"/></svg></button></div>
           <div class="report-card tw-card">
-            <div id="report-info" class="report-meta"></div>
             <div id="report" class="tw-table-wrap report-wrap"></div>
-          </div>
-        </section>
-        <section class="block ot-conv">
-          <div class="block-head">
-            <h2>대학별 환산점수</h2>
-            <div id="conv-tab" class="tw-segmented">
-              <button type="button" data-tab="med">메디컬</button>
-              <button type="button" data-tab="S">자연계</button>
-              <button type="button" data-tab="H">인문계</button>
-            </div>
-          </div>
-          <div class="conv tw-card">
-            <div class="conv-legend"><span class="lg-me">나</span><span class="lg-line">합격선</span></div>
-            <div id="conv-list" class="conv-list"></div>
           </div>
         </section>
         <section class="block ot-pos">
@@ -114,13 +93,26 @@
               <div class="tw-stat"><span class="tw-stat-label">등수</span><span class="tw-stat-value" id="pos-rank"></span></div>
               <div class="tw-stat"><span class="tw-stat-label" id="pos-score-label"></span><span class="tw-stat-value" id="pos-score"></span></div>
             </div>
-            <div id="position-chart" class="position-chart"></div>
+          </div>
+        </section>
+        <section class="block ot-conv">
+          <div class="block-head">
+            <h2>대학별 환산점수</h2>
+            <div id="conv-tab" class="tw-segmented">
+              <button type="button" data-tab="med">의치한약수</button>
+              <button type="button" data-tab="S">자연계</button>
+              <button type="button" data-tab="H">인문계</button>
+            </div>
+          </div>
+          <div class="conv tw-card">
+            <div class="conv-legend"><span class="lg-me">내 등수</span><span class="lg-alt">다른 반영식</span><span class="lg-line">합격선</span></div>
+            <div id="conv-list" class="conv-list"></div>
           </div>
         </section>
       </div>
 
       <section class="block">
-        <div class="block-head"><h2>군별 추천</h2><div class="tier-legend" aria-hidden="true"><span data-tier="safe">안정</span><span data-tier="fit">적정</span><span data-tier="reach">소신</span></div></div>
+        <div class="block-head"><h2>내 점수대 대학</h2><button id="open-wheel" class="icon-btn wheel-egg" type="button" aria-label="돌림판" title="돌림판"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17M3.5 12h17M6 6l12 12M18 6 6 18"/><circle cx="12" cy="12" r="1.6" class="fillme"/></svg></button></div>
         <div id="rec-category" class="chip-row"></div>
         <div id="recs" class="rounds"></div>
       </section>
@@ -128,7 +120,7 @@
 
     <section id="view-find" class="view" hidden>
       <div class="find-bar">
-        <label class="tw-search find-search"><input id="find-query" class="tw-input" type="search" placeholder="대학 또는 학과" autocomplete="off" aria-label="검색"></label>
+        <label class="tw-search find-search"><input id="find-query" class="tw-input" type="search" placeholder="대학 또는 학과" autocomplete="off" aria-label="검색"><button id="find-clear" class="icon-btn find-clear" type="button" aria-label="지우기" title="지우기" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg></button></label>
         <div id="find-round" class="tw-segmented">
           <button type="button" data-round="" class="is-active">전체</button>
           <button type="button" data-round="가">가</button>
@@ -142,23 +134,16 @@
 
     <section id="view-list" class="view" hidden>
       <div class="block-head"><h2>모의지원</h2></div>
-      <div id="list-summary" class="combo"></div>
       <div id="list-rounds" class="rounds"></div>
     </section>
   </main>
-
-  <nav class="tab-bar" aria-label="화면">
-    <button type="button" data-view="overview" class="is-active">성적 분석</button>
-    <button type="button" data-view="find">대학 찾기</button>
-    <button type="button" data-view="list">모의지원</button>
-  </nav>
 
   <div id="scrim" class="scrim" hidden></div>
 
   <section id="sheet-input" class="sheet" role="dialog" aria-modal="true" aria-labelledby="input-title" hidden>
     <header class="sheet-head">
       <h2 id="input-title">성적</h2>
-      <span class="sheet-head-actions"><button id="input-dice" class="icon-btn composer-dice" type="button" aria-label="예시 성적" title="예시 성적"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="9" cy="9" r="1.1" class="pip"/><circle cx="15" cy="9" r="1.1" class="pip"/><circle cx="12" cy="12" r="1.1" class="pip"/><circle cx="9" cy="15" r="1.1" class="pip"/><circle cx="15" cy="15" r="1.1" class="pip"/></svg></button>
+      <span class="sheet-head-actions"><button id="input-dice" class="icon-btn composer-dice" type="button" aria-label="예시 성적" title="예시 성적"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="9" cy="9" r="1.1" class="pip is-on" data-p="tl"/><circle cx="15" cy="9" r="1.1" class="pip is-on" data-p="tr"/><circle cx="9" cy="12" r="1.1" class="pip" data-p="ml"/><circle cx="12" cy="12" r="1.1" class="pip is-on" data-p="c"/><circle cx="15" cy="12" r="1.1" class="pip" data-p="mr"/><circle cx="9" cy="15" r="1.1" class="pip is-on" data-p="bl"/><circle cx="15" cy="15" r="1.1" class="pip is-on" data-p="br"/></svg></button>
       <button class="icon-btn" type="button" data-close aria-label="닫기" title="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></span>
     </header>
     <div class="sheet-body">
@@ -173,8 +158,8 @@
       </div>
     </div>
     <footer class="sheet-foot">
-      <button id="input-reset" class="tw-button is-ghost is-sm" type="button">처음 화면</button>
-      <span id="input-status" class="sheet-status"></span>
+      <button id="input-reset" class="tw-button is-ghost is-sm" type="button">처음으로</button>
+      <span id="input-status" class="tw-badge sheet-status"></span>
       <button id="input-apply" class="tw-button is-primary" type="button">적용</button>
     </footer>
   </section>
@@ -194,6 +179,14 @@
       </div>
     </header>
     <div id="detail-body" class="sheet-body"></div>
+  </section>
+
+  <section id="sheet-wheel" class="sheet is-wheel" role="dialog" aria-modal="true" aria-labelledby="wheel-title" hidden>
+    <header class="sheet-head">
+      <h2 id="wheel-title">돌림판</h2>
+      <button class="icon-btn" type="button" data-close aria-label="닫기" title="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </header>
+    <div id="wheel-body" class="sheet-body wheel-body"></div>
   </section>
 
   <section id="sheet-settings" class="sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
